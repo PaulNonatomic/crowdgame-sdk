@@ -10,6 +10,7 @@ namespace Nonatomic.CrowdGame.Streaming
 	public interface IStreamingService
 	{
 		StreamState State { get; }
+		StreamDiagnostics Diagnostics { get; }
 		event Action<StreamState> OnStateChanged;
 		event Action<string> OnScreenConnected;
 		event Action<string> OnScreenDisconnected;
