@@ -1,3 +1,5 @@
+using System;
+
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
@@ -7,18 +9,27 @@ namespace Nonatomic.CrowdGame
 	{
 		public string PlayerId { get; }
 		public PlayerMetadata Metadata { get; }
+		public PlayerCapabilities Capabilities { get; }
 		public bool IsConnected { get; private set; }
+		public DateTime JoinedAt { get; }
 
-		public PlayerSession(string playerId, PlayerMetadata metadata)
+		public PlayerSession(string playerId, PlayerMetadata metadata, PlayerCapabilities capabilities = null)
 		{
 			PlayerId = playerId;
 			Metadata = metadata ?? new PlayerMetadata();
+			Capabilities = capabilities ?? new PlayerCapabilities();
 			IsConnected = true;
+			JoinedAt = DateTime.UtcNow;
 		}
 
 		public void Disconnect()
 		{
 			IsConnected = false;
+		}
+
+		public void Reconnect()
+		{
+			IsConnected = true;
 		}
 	}
 }

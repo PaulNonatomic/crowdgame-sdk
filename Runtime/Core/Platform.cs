@@ -18,11 +18,25 @@ namespace Nonatomic.CrowdGame
 			remove => PlatformEvents.PlayerJoined -= value;
 		}
 
-		/// <summary>Raised when a player disconnects or leaves.</summary>
+		/// <summary>Raised when a player leaves the session permanently.</summary>
 		public static event Action<IPlayerSession> OnPlayerLeft
 		{
 			add => PlatformEvents.PlayerLeft += value;
 			remove => PlatformEvents.PlayerLeft -= value;
+		}
+
+		/// <summary>Raised when a previously disconnected player reconnects.</summary>
+		public static event Action<IPlayerSession> OnPlayerReconnected
+		{
+			add => PlatformEvents.PlayerReconnected += value;
+			remove => PlatformEvents.PlayerReconnected -= value;
+		}
+
+		/// <summary>Raised when a player's connection drops (may reconnect).</summary>
+		public static event Action<IPlayerSession> OnPlayerDisconnected
+		{
+			add => PlatformEvents.PlayerDisconnected += value;
+			remove => PlatformEvents.PlayerDisconnected -= value;
 		}
 
 		/// <summary>Raised when input is received from a player's device.</summary>

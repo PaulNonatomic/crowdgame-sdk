@@ -1,3 +1,5 @@
+using System;
+
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
@@ -7,7 +9,10 @@ namespace Nonatomic.CrowdGame
 	{
 		string PlayerId { get; }
 		PlayerMetadata Metadata { get; }
+		PlayerCapabilities Capabilities { get; }
 		bool IsConnected { get; }
+		DateTime JoinedAt { get; }
 		void Disconnect();
+		void Reconnect();
 	}
 }

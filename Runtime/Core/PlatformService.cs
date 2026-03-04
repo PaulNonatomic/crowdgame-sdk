@@ -12,18 +12,20 @@ namespace Nonatomic.CrowdGame
 	/// </summary>
 	public class PlatformService : IPlatform
 	{
-		public int PlayerCount => _playerRegistry.Count;
+		public int PlayerCount => _playerManager.PlayerCount;
 		public GameState CurrentState => _lifecycle?.CurrentState ?? GameState.None;
-		public IReadOnlyList<IPlayerSession> Players => _playerRegistry.Players;
+		public IReadOnlyList<IPlayerSession> Players => _playerManager.Players;
 
 		public IInputProvider InputProvider { get; private set; }
 		public IStreamingService StreamingService { get; private set; }
 		public IMessageTransport MessageTransport { get; private set; }
 		public IGameLifecycle Lifecycle { get; private set; }
+		public IPlayerManager PlayerManager => _playerManager;
 
-		private readonly PlayerRegistry _playerRegistry = new PlayerRegistry();
+		private readonly PlayerManager _playerManager = new PlayerManager();
 		private PlatformConfig _config;
 		private bool _initialised;
+		private IGameLifecycle _lifecycle;
 
 		public void Initialise(PlatformConfig config)
 		{
@@ -34,6 +36,12 @@ namespace Nonatomic.CrowdGame
 			}
 
 			_config = config;
+
+			if (config != null)
+			{
+				_playerManager.MaxPlayers = config.MaxPlayers;
+			}
+
 			_initialised = true;
 
 			Debug.Log("[CrowdGame] Platform initialised.");
@@ -133,39 +141,23 @@ namespace Nonatomic.CrowdGame
 				_lifecycle.OnStateChanged -= HandleGameStateChanged;
 			}
 
-			_playerRegistry.Clear();
+			_playerManager.Clear();
 			_initialised = false;
 		}
 
-		private IGameLifecycle _lifecycle;
-
 		private void HandlePlayerJoinRequested(string playerId, PlayerMetadata metadata)
 		{
-			if (_config != null && _playerRegistry.Count >= _config.MaxPlayers)
-			{
-				Debug.LogWarning($"[CrowdGame] Max players ({_config.MaxPlayers}) reached. Rejecting {playerId}.");
-				return;
-			}
-
-			var session = _playerRegistry.AddPlayer(playerId, metadata);
-			if (session != null)
-			{
-				PlatformEvents.RaisePlayerJoined(session);
-			}
+			_playerManager.AddPlayer(playerId, metadata);
 		}
 
 		private void HandlePlayerDisconnected(string playerId)
 		{
-			var session = _playerRegistry.RemovePlayer(playerId);
-			if (session != null)
-			{
-				PlatformEvents.RaisePlayerLeft(session);
-			}
+			_playerManager.DisconnectPlayer(playerId);
 		}
 
 		private void HandleInputReceived(string playerId, InputMessage input)
 		{
-			var session = _playerRegistry.GetPlayer(playerId);
+			var session = _playerManager.GetPlayer(playerId);
 			if (session != null)
 			{
 				PlatformEvents.RaisePlayerInput(session, input);

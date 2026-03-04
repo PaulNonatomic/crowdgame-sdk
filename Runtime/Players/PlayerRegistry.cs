@@ -53,6 +53,17 @@ namespace Nonatomic.CrowdGame
 			}
 		}
 
+		internal void AddExisting(PlayerSession session)
+		{
+			lock (_lock)
+			{
+				if (_players.ContainsKey(session.PlayerId)) return;
+
+				_players[session.PlayerId] = session;
+				_playerList.Add(session);
+			}
+		}
+
 		public IPlayerSession RemovePlayer(string playerId)
 		{
 			lock (_lock)

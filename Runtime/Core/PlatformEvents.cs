@@ -9,6 +9,8 @@ namespace Nonatomic.CrowdGame
 	{
 		public static event Action<IPlayerSession> PlayerJoined;
 		public static event Action<IPlayerSession> PlayerLeft;
+		public static event Action<IPlayerSession> PlayerReconnected;
+		public static event Action<IPlayerSession> PlayerDisconnected;
 		public static event Action<IPlayerSession, InputMessage> PlayerInput;
 		public static event Action<GameState> GameStateChanged;
 
@@ -20,6 +22,16 @@ namespace Nonatomic.CrowdGame
 		internal static void RaisePlayerLeft(IPlayerSession session)
 		{
 			PlayerLeft?.Invoke(session);
+		}
+
+		internal static void RaisePlayerReconnected(IPlayerSession session)
+		{
+			PlayerReconnected?.Invoke(session);
+		}
+
+		internal static void RaisePlayerDisconnected(IPlayerSession session)
+		{
+			PlayerDisconnected?.Invoke(session);
 		}
 
 		internal static void RaisePlayerInput(IPlayerSession session, InputMessage input)
@@ -36,6 +48,8 @@ namespace Nonatomic.CrowdGame
 		{
 			PlayerJoined = null;
 			PlayerLeft = null;
+			PlayerReconnected = null;
+			PlayerDisconnected = null;
 			PlayerInput = null;
 			GameStateChanged = null;
 		}
