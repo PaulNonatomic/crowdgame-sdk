@@ -1,0 +1,40 @@
+{
+	"name": "com.nonatomic.crowdgame",
+	"version": "0.1.0",
+	"displayName": "CrowdGame SDK",
+	"description": "Unity SDK for the Cloud Event Gaming Platform. Build interactive, mass-participation games for live events with cloud rendering, WebRTC streaming, and real-time phone input.",
+	"unity": "6000.0",
+	"unityRelease": "0f1",
+	"documentationUrl": "https://github.com/PaulNonatomic/crowdgame-sdk",
+	"changelogUrl": "https://github.com/PaulNonatomic/crowdgame-sdk/blob/main/CHANGELOG.md",
+	"licensesUrl": "https://github.com/PaulNonatomic/crowdgame-sdk/blob/main/LICENSE.md",
+	"dependencies": {
+		"com.unity.inputsystem": "1.18.0",
+		"com.unity.render-pipelines.universal": "17.0.0"
+	},
+	"keywords": [
+		"crowdgame",
+		"streaming",
+		"webrtc",
+		"multiplayer",
+		"event",
+		"cloud-gaming",
+		"input"
+	],
+	"author": {
+		"name": "Nonatomic",
+		"url": "https://github.com/PaulNonatomic"
+	},
+	"samples": [
+		{
+			"displayName": "Joystick Game",
+			"description": "Movement-based arena game demonstrating joystick + button input.",
+			"path": "Samples~/JoystickGame"
+		},
+		{
+			"displayName": "Quiz Game",
+			"description": "Multi-choice selection game demonstrating button/selection input.",
+			"path": "Samples~/QuizGame"
+		}
+	]
+}

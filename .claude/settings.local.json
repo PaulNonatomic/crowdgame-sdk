@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__vibescope__start_work_session",
+      "mcp__vibescope__create_project",
+      "mcp__vibescope__add_task",
+      "mcp__vibescope__create_body_of_work",
+      "mcp__vibescope__add_task_to_body_of_work",
+      "mcp__vibescope__add_task_dependency",
+      "mcp__vibescope__activate_body_of_work",
+      "mcp__vibescope__get_next_task",
+      "mcp__vibescope__confirm_agent_setup",
+      "mcp__vibescope__update_task",
+      "mcp__vibescope__update_agent_status",
+      "Bash(mkdir:*)",
+      "Bash(do:*)",
+      "Bash(rm:*)",
+      "Bash(pnpm *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(git *)",
+      "Bash(curl *)",
+      "Bash(where *)",
+      "Bash(echo *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(cd *)",
+      "Bash(mkdir *)",
+      "Bash(claude *)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd clickable agent filtering, ideas generation, and unit test infrastructure\n\n- Make agent pills clickable to filter tasks by selected agent\n- Add filter indicator with clear button in task filters area\n- Generate 10 improvement ideas for the project\n- Add vitest for unit testing with validator tests \\(34 tests\\)\n- Add fallback activity tracking for background tasks\n- Update CLAUDE.md with enhanced session workflow\n- Add build:all and test scripts to root package.json\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(unzip:*)",
+      "WebSearch",
+      "WebFetch",
+      "mcp__vibescope__*",
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "enabledMcpjsonServers": [
+    "vibescope"
+  ]
+}
