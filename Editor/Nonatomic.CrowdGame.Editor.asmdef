@@ -2,7 +2,8 @@
 	"name": "Nonatomic.CrowdGame.Editor",
 	"rootNamespace": "Nonatomic.CrowdGame.Editor",
 	"references": [
-		"Nonatomic.CrowdGame.Runtime"
+		"Nonatomic.CrowdGame.Runtime",
+		"Unity.InputSystem"
 	],
 	"includePlatforms": [
 		"Editor"

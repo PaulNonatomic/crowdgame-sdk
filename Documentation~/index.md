@@ -1,8 +1,15 @@
-# CrowdGame SDK Documentation
+# CrowdGame SDK
 
-Welcome to the CrowdGame SDK documentation. This SDK enables Unity game developers to build interactive, mass-participation games for the Cloud Event Gaming Platform.
+Unity SDK for the Cloud Event Gaming Platform.
 
-## Contents
+## Getting Started
+
+1. Install the package via UPM (Unity Package Manager)
+2. Drag the **CrowdGame Platform** prefab into your scene
+3. Configure your `PlatformConfig` asset
+4. Subscribe to platform events in your game scripts
+
+## Sections
 
 - [Getting Started](getting-started.md)
 - [Input System](input-system.md)

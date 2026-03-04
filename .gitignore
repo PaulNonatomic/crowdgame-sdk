@@ -1,26 +1,4 @@
-# Unity meta files for Samples~ and Documentation~ (tilde directories excluded by Unity)
-# These directories use ~ suffix so Unity ignores them, but git should track them
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# IDE
-.idea/
-.vs/
-*.suo
-*.user
-*.userprefs
-*.pidb
-*.booproj
-*.svd
-*.pdb
-*.mdb
-*.opendb
-*.VC.db
-
-# Unity
+# Unity generated
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
@@ -28,31 +6,29 @@ desktop.ini
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
+
+# IDE
+.vs/
+.vscode/
 *.csproj
 *.sln
-*.tmp
-*.bak
-*.swp
-*.pidb.meta
-*.pdb.meta
-*.mdb.meta
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.idea/
 
-# Builds
-*.apk
-*.aab
-*.unitypackage
-*.app
+# OS
+.DS_Store
+Thumbs.db
 
-# Crashlytics
-crashlytics-build.properties
+# Unity meta files for Samples~ are not needed
+Samples~/**/*.meta
 
-# NuGet
-*.nupkg
-packages/
-
-# Node (for any tooling)
-node_modules/
-
-# Environment
-.env
-.env.*
+# MCP config (contains API keys)
+.mcp.json

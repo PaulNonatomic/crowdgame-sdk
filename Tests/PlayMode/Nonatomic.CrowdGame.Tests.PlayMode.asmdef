@@ -2,7 +2,10 @@
 	"name": "Nonatomic.CrowdGame.Tests.PlayMode",
 	"rootNamespace": "Nonatomic.CrowdGame.Tests.PlayMode",
 	"references": [
-		"Nonatomic.CrowdGame.Runtime"
+		"Nonatomic.CrowdGame.Runtime",
+		"Unity.InputSystem",
+		"UnityEngine.TestRunner",
+		"UnityEditor.TestRunner"
 	],
 	"includePlatforms": [],
 	"excludePlatforms": [],
