@@ -136,6 +136,7 @@ namespace Nonatomic.CrowdGame
 			Instance?.Dispose();
 			Instance = null;
 			PlatformEvents.ClearAll();
+			LifecycleEvents.ClearAll();
 
 			Debug.Log("[CrowdGame] Platform shut down.");
 		}

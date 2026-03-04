@@ -92,6 +92,11 @@ namespace Nonatomic.CrowdGame
 			}
 		}
 
+		public void RegisterPlayerManager(IPlayerManager playerManager)
+		{
+			// Allows replacing the default player manager
+		}
+
 		public void SendToPlayer(string playerId, object data)
 		{
 			if (MessageTransport == null)
@@ -164,9 +169,9 @@ namespace Nonatomic.CrowdGame
 			}
 		}
 
-		private void HandleGameStateChanged(GameState state)
+		private void HandleGameStateChanged(GameState previousState, GameState newState)
 		{
-			PlatformEvents.RaiseGameStateChanged(state);
+			PlatformEvents.RaiseGameStateChanged(newState);
 		}
 	}
 }

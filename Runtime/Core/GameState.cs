@@ -6,9 +6,11 @@ namespace Nonatomic.CrowdGame
 	public enum GameState
 	{
 		None,
-		Lobby,
+		WaitingForPlayers,
+		Countdown,
 		Playing,
 		Paused,
-		Ended
+		GameOver,
+		Results
 	}
 }
