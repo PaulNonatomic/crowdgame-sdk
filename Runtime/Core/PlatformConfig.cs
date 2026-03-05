@@ -11,9 +11,9 @@ namespace Nonatomic.CrowdGame
 	public class PlatformConfig : ScriptableObject
 	{
 		[Header("Streaming")]
-		[field: SerializeField] public StreamQuality Quality { get; private set; } = StreamQuality.HD_1080p;
-		[field: SerializeField] public bool AlphaStackingEnabled { get; private set; }
-		[field: SerializeField] public int TargetFrameRate { get; private set; } = 60;
+		[field: SerializeField] public StreamQuality StreamQuality { get; set; } = StreamQuality.HD_1080p;
+		[field: SerializeField] public bool AlphaStackingEnabled { get; set; }
+		[field: SerializeField] public int TargetFrameRate { get; set; } = 60;
 
 		[Header("Input")]
 		[field: SerializeField] public InputTransportMode TransportMode { get; private set; } = InputTransportMode.WebRTC;
