@@ -53,6 +53,22 @@ namespace Nonatomic.CrowdGame
 			}
 		}
 
+		public IPlayerSession AddPlayer(PlayerSession session)
+		{
+			lock (_lock)
+			{
+				if (_players.ContainsKey(session.PlayerId))
+				{
+					Debug.LogWarning($"[CrowdGame] Player {session.PlayerId} already registered.");
+					return _players[session.PlayerId];
+				}
+
+				_players[session.PlayerId] = session;
+				_playerList.Add(session);
+				return session;
+			}
+		}
+
 		internal void AddExisting(PlayerSession session)
 		{
 			lock (_lock)
