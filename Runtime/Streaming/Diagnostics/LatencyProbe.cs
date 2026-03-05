@@ -4,45 +4,42 @@ using UnityEngine;
 namespace Nonatomic.CrowdGame.Streaming
 {
 	/// <summary>
-	/// Measures end-to-end latency via ping/pong data channel messages.
+	/// Measures end-to-end latency between input and display.
+	/// Sends timestamped ping via data channel, measures round-trip.
 	/// </summary>
 	public class LatencyProbe
 	{
-		public float LastLatencyMs { get; private set; }
-		public float AverageLatencyMs { get; private set; }
-		public int SampleCount { get; private set; }
+		private float _lastPingTime;
+		private float _smoothedLatency;
+		private const float SmoothingFactor = 0.1f;
 
-		private float _sum;
-		private double _lastPingTime;
+		public float CurrentLatency => _smoothedLatency;
+		public float PeakLatency { get; private set; }
 
-		/// <summary>
-		/// Record a ping being sent. Returns the timestamp to include in the message.
-		/// </summary>
-		public double SendPing()
+		public event Action<float> OnLatencyMeasured;
+
+		public void SendPing()
 		{
-			_lastPingTime = Time.realtimeSinceStartupAsDouble;
-			return _lastPingTime;
+			_lastPingTime = Time.realtimeSinceStartup;
 		}
 
-		/// <summary>
-		/// Record a pong being received. Calculates latency from the original ping timestamp.
-		/// </summary>
-		public void ReceivePong(double originalPingTime)
+		public void ReceivePong()
 		{
-			var now = Time.realtimeSinceStartupAsDouble;
-			LastLatencyMs = (float)((now - originalPingTime) * 1000.0);
+			var latency = (Time.realtimeSinceStartup - _lastPingTime) * 1000f;
+			_smoothedLatency = Mathf.Lerp(_smoothedLatency, latency, SmoothingFactor);
 
-			SampleCount++;
-			_sum += LastLatencyMs;
-			AverageLatencyMs = _sum / SampleCount;
+			if (latency > PeakLatency)
+			{
+				PeakLatency = latency;
+			}
+
+			OnLatencyMeasured?.Invoke(_smoothedLatency);
 		}
 
 		public void Reset()
 		{
-			LastLatencyMs = 0;
-			AverageLatencyMs = 0;
-			SampleCount = 0;
-			_sum = 0;
+			_smoothedLatency = 0f;
+			PeakLatency = 0f;
 		}
 	}
 }

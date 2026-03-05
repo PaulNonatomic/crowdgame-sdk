@@ -1,24 +1,19 @@
-using UnityEngine;
-
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Accelerometer/gyroscope tilt data from the device.
+	/// Accelerometer/gyroscope tilt control providing pitch, roll, yaw.
 	/// </summary>
-	public class TiltControl : BaseControl<TiltData>
+	public class TiltControl : IControl
 	{
-		public override ControlType Type => ControlType.Tilt;
+		public string Id { get; }
+		public ControlType Type => ControlType.Tilt;
+		public string Label { get; }
+		public float Sensitivity { get; set; } = 1.0f;
 
-		public float Pitch => Value.Pitch;
-		public float Roll => Value.Roll;
-		public float Yaw => Value.Yaw;
-		public Vector3 RawAcceleration => Value.RawAcceleration;
-
-		public TiltControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public TiltControl(string id, string label = "Tilt")
 		{
-			Value = message.Tilt;
+			Id = id;
+			Label = label;
 		}
 	}
 }

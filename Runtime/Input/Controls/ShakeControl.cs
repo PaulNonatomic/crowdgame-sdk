@@ -1,20 +1,19 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Device shake detection with intensity.
+	/// Shake detection control providing intensity and trigger state.
 	/// </summary>
-	public class ShakeControl : BaseControl<ShakeData>
+	public class ShakeControl : IControl
 	{
-		public override ControlType Type => ControlType.Shake;
+		public string Id { get; }
+		public ControlType Type => ControlType.Shake;
+		public string Label { get; }
+		public float Threshold { get; set; } = 2.0f;
 
-		public float Intensity => Value.Intensity;
-		public bool Triggered => Value.Triggered;
-
-		public ShakeControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public ShakeControl(string id, string label = "Shake")
 		{
-			Value = message.Shake;
+			Id = id;
+			Label = label;
 		}
 	}
 }

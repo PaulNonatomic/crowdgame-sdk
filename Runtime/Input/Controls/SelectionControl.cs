@@ -1,20 +1,21 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Multi-choice selection (quiz answers, voting).
+	/// Multi-choice selection control for quiz answers and option selection.
 	/// </summary>
-	public class SelectionControl : BaseControl<SelectionData>
+	public class SelectionControl : IControl
 	{
-		public override ControlType Type => ControlType.Selection;
+		public string Id { get; }
+		public ControlType Type => ControlType.Selection;
+		public string Label { get; }
+		public string[] Options { get; set; }
+		public bool AllowMultiple { get; set; }
 
-		public int SelectedIndex => Value.SelectedIndex;
-		public string[] Options => Value.Options;
-
-		public SelectionControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public SelectionControl(string id, string label = "Selection", params string[] options)
 		{
-			Value = message.Selection;
+			Id = id;
+			Label = label;
+			Options = options;
 		}
 	}
 }

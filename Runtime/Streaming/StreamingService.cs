@@ -56,7 +56,6 @@ namespace Nonatomic.CrowdGame.Streaming
 
 			await _signaling.DisconnectAsync();
 			_latencyProbe.Reset();
-			Diagnostics.Reset();
 
 			SetState(StreamState.Idle);
 			Debug.Log("[CrowdGame] Streaming stopped.");
@@ -77,7 +76,6 @@ namespace Nonatomic.CrowdGame.Streaming
 		/// </summary>
 		public void HandleScreenConnected(string connectionId)
 		{
-			Diagnostics.ConnectedScreens++;
 			OnScreenConnected?.Invoke(connectionId);
 		}
 
@@ -86,7 +84,6 @@ namespace Nonatomic.CrowdGame.Streaming
 		/// </summary>
 		public void HandleScreenDisconnected(string connectionId)
 		{
-			Diagnostics.ConnectedScreens = Math.Max(0, Diagnostics.ConnectedScreens - 1);
 			OnScreenDisconnected?.Invoke(connectionId);
 		}
 

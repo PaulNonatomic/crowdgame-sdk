@@ -4,17 +4,50 @@ using UnityEngine;
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// ScriptableObject that defines which controls appear on the phone controller
-	/// and how they are arranged. The phone web client reads this definition and
-	/// generates the UI accordingly.
+	/// ScriptableObject defining a phone controller layout.
+	/// Can be created via Assets menu or built programmatically with ControllerLayoutBuilder.
 	/// </summary>
-	[CreateAssetMenu(menuName = "CrowdGame/Controller Layout", fileName = "ControllerLayout")]
+	[CreateAssetMenu(fileName = "ControllerLayout", menuName = "CrowdGame/Controller Layout")]
 	public class ControllerLayout : ScriptableObject, IControllerLayout
 	{
-		[field: SerializeField] public string LayoutName { get; private set; }
-		[field: SerializeField] public Orientation RequiredOrientation { get; private set; } = Orientation.Landscape;
-		[field: SerializeField] public List<ControlDefinition> ControlsList { get; private set; } = new List<ControlDefinition>();
+		[SerializeField] private string _layoutName = "Custom Layout";
+		[SerializeField] private Orientation _requiredOrientation = Orientation.Portrait;
+		[SerializeField] private List<ControlDefinition> _controls = new();
 
-		public IReadOnlyList<ControlDefinition> Controls => ControlsList;
+		public string LayoutName => _layoutName;
+		public Orientation RequiredOrientation => _requiredOrientation;
+		public IReadOnlyList<ControlDefinition> Controls => _controls;
+
+		public void SetLayoutName(string name)
+		{
+			_layoutName = name;
+		}
+
+		public void SetOrientation(Orientation orientation)
+		{
+			_requiredOrientation = orientation;
+		}
+
+		public void AddControl(ControlDefinition control)
+		{
+			_controls.Add(control);
+		}
+
+		public void ClearControls()
+		{
+			_controls.Clear();
+		}
+
+		/// <summary>
+		/// Creates a runtime ControllerLayout instance (not a ScriptableObject asset).
+		/// </summary>
+		public static ControllerLayout CreateRuntime(string layoutName, Orientation orientation, List<ControlDefinition> controls)
+		{
+			var layout = CreateInstance<ControllerLayout>();
+			layout._layoutName = layoutName;
+			layout._requiredOrientation = orientation;
+			layout._controls = controls ?? new List<ControlDefinition>();
+			return layout;
+		}
 	}
 }

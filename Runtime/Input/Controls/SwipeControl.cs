@@ -1,22 +1,19 @@
-using UnityEngine;
-
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Directional swipe gesture with velocity.
+	/// Swipe gesture control providing direction and velocity.
 	/// </summary>
-	public class SwipeControl : BaseControl<SwipeData>
+	public class SwipeControl : IControl
 	{
-		public override ControlType Type => ControlType.Swipe;
+		public string Id { get; }
+		public ControlType Type => ControlType.Swipe;
+		public string Label { get; }
+		public float MinSwipeDistance { get; set; } = 50f;
 
-		public Vector2 Direction => Value.Direction;
-		public float Velocity => Value.Velocity;
-
-		public SwipeControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public SwipeControl(string id, string label = "Swipe")
 		{
-			Value = message.Swipe;
+			Id = id;
+			Label = label;
 		}
 	}
 }

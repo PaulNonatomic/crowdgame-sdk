@@ -1,24 +1,12 @@
-using System;
-
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Base control interface representing a single input modality.
+	/// Base interface for all input controls on the phone controller.
 	/// </summary>
 	public interface IControl
 	{
 		string Id { get; }
 		ControlType Type { get; }
-		bool HasValue { get; }
-		void Reset();
-	}
-
-	/// <summary>
-	/// Typed control interface with value and change notification.
-	/// </summary>
-	public interface IControl<T> : IControl
-	{
-		T Value { get; }
-		event Action<T> OnValueChanged;
+		string Label { get; }
 	}
 }

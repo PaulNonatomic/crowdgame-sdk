@@ -1,22 +1,20 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Analogue stick control with X/Y axes, magnitude, and angle.
+	/// Analogue joystick control providing X/Y axis, magnitude, and angle.
 	/// </summary>
-	public class JoystickControl : BaseControl<JoystickData>
+	public class JoystickControl : IControl
 	{
-		public override ControlType Type => ControlType.Joystick;
+		public string Id { get; }
+		public ControlType Type => ControlType.Joystick;
+		public string Label { get; }
+		public float DeadZone { get; set; } = 0.1f;
+		public float Sensitivity { get; set; } = 1.0f;
 
-		public float X => Value.X;
-		public float Y => Value.Y;
-		public float Magnitude => Value.Magnitude;
-		public float Angle => Value.Angle;
-
-		public JoystickControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public JoystickControl(string id, string label = "Joystick")
 		{
-			Value = message.Joystick;
+			Id = id;
+			Label = label;
 		}
 	}
 }

@@ -1,20 +1,19 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Discrete button control with press state and label.
+	/// Discrete press/release button control with configurable label.
 	/// </summary>
-	public class ButtonControl : BaseControl<ButtonData>
+	public class ButtonControl : IControl
 	{
-		public override ControlType Type => ControlType.Button;
+		public string Id { get; }
+		public ControlType Type => ControlType.Button;
+		public string Label { get; }
+		public string IconName { get; set; }
 
-		public bool Pressed => Value.Pressed;
-		public string Label => Value.Label;
-
-		public ButtonControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public ButtonControl(string id, string label = "Button")
 		{
-			Value = message.Button;
+			Id = id;
+			Label = label;
 		}
 	}
 }

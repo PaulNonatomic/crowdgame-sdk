@@ -1,20 +1,21 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Text string input submission.
+	/// Text input control for string submission.
 	/// </summary>
-	public class TextControl : BaseControl<TextData>
+	public class TextControl : IControl
 	{
-		public override ControlType Type => ControlType.Text;
+		public string Id { get; }
+		public ControlType Type => ControlType.Text;
+		public string Label { get; }
+		public string Placeholder { get; set; }
+		public int MaxLength { get; set; } = 256;
 
-		public string Text => Value.Value;
-		public bool Submitted => Value.Submitted;
-
-		public TextControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public TextControl(string id, string label = "Text", string placeholder = "")
 		{
-			Value = message.Text;
+			Id = id;
+			Label = label;
+			Placeholder = placeholder;
 		}
 	}
 }

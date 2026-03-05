@@ -1,32 +1,22 @@
-using System;
-
 namespace Nonatomic.CrowdGame.Streaming
 {
 	/// <summary>
-	/// Real-time streaming diagnostics: FPS, bitrate, latency, packet loss.
+	/// Real-time streaming diagnostics data.
 	/// </summary>
-	[Serializable]
 	public class StreamDiagnostics
 	{
 		public float Fps { get; set; }
-		public int BitrateKbps { get; set; }
-		public float LatencyMs { get; set; }
-		public float PacketLossPercent { get; set; }
-		public int ConnectedScreens { get; set; }
-		public string EncoderName { get; set; }
+		public float Bitrate { get; set; }
+		public float Latency { get; set; }
+		public float PacketLoss { get; set; }
+		public string EncoderType { get; set; }
 		public int Width { get; set; }
 		public int Height { get; set; }
+		public bool IsHardwareEncoding { get; set; }
 
-		public void Reset()
+		public override string ToString()
 		{
-			Fps = 0;
-			BitrateKbps = 0;
-			LatencyMs = 0;
-			PacketLossPercent = 0;
-			ConnectedScreens = 0;
-			EncoderName = null;
-			Width = 0;
-			Height = 0;
+			return $"{Width}x{Height} @ {Fps:F1}fps | {Bitrate / 1_000_000f:F1} Mbps | {Latency:F0}ms | Loss: {PacketLoss:F1}% | {EncoderType}";
 		}
 	}
 }

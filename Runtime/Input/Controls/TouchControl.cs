@@ -1,21 +1,19 @@
-namespace Nonatomic.CrowdGame.Input
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Normalised touch position with phase tracking.
+	/// Touch control providing normalised position and touch phase.
 	/// </summary>
-	public class TouchControl : BaseControl<TouchData>
+	public class TouchControl : IControl
 	{
-		public override ControlType Type => ControlType.Touch;
+		public string Id { get; }
+		public ControlType Type => ControlType.Touch;
+		public string Label { get; }
+		public bool MultiTouch { get; set; }
 
-		public float X => Value.X;
-		public float Y => Value.Y;
-		public TouchPhase Phase => Value.Phase;
-
-		public TouchControl(string id) : base(id) { }
-
-		public override void Apply(InputMessage message)
+		public TouchControl(string id, string label = "Touch")
 		{
-			Value = message.Touch;
+			Id = id;
+			Label = label;
 		}
 	}
 }
