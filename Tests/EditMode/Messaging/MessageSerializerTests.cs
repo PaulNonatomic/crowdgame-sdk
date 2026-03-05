@@ -1,55 +1,51 @@
 using NUnit.Framework;
-using Nonatomic.CrowdGame.Messaging;
+using Nonatomic.CrowdGame;
 
 namespace Nonatomic.CrowdGame.Tests.EditMode
 {
 	public class MessageSerializerTests
 	{
 		[Test]
-		public void Serialize_ReturnsNonEmptyBytes()
+		public void Serialize_And_Deserialize_RoundTrip()
 		{
-			var message = new ScoreUpdateMessage(100);
+			var original = new InputMessage
+			{
+				PlayerId = "p1",
+				ControlId = "joystick",
+				ControlType = ControlType.Joystick,
+				Timestamp = 123.456
+			};
 
-			var bytes = MessageSerializer.Serialize(message);
+			var json = MessageSerializer.Serialize(original);
+			Assert.IsNotNull(json);
+			Assert.IsNotEmpty(json);
 
-			Assert.IsNotNull(bytes);
-			Assert.Greater(bytes.Length, 0);
+			var deserialized = MessageSerializer.Deserialize<InputMessage>(json);
+			Assert.IsNotNull(deserialized);
+			Assert.AreEqual("p1", deserialized.PlayerId);
+			Assert.AreEqual("joystick", deserialized.ControlId);
+			Assert.AreEqual(ControlType.Joystick, deserialized.ControlType);
 		}
 
 		[Test]
-		public void RoundTrip_ScoreUpdateMessage_PreservesScore()
+		public void Serialize_NullReturnsNull()
 		{
-			var original = new ScoreUpdateMessage(42, 1, 10);
-
-			var bytes = MessageSerializer.Serialize(original);
-			var restored = MessageSerializer.Deserialize<ScoreUpdateMessage>(bytes);
-
-			Assert.AreEqual(42, restored.Score);
-			Assert.AreEqual(1, restored.Rank);
-			Assert.AreEqual(10, restored.TotalPlayers);
+			var json = MessageSerializer.Serialize<InputMessage>(null);
+			Assert.IsNull(json);
 		}
 
 		[Test]
-		public void RoundTrip_GameStateMessage_PreservesState()
+		public void Deserialize_EmptyStringReturnsNull()
 		{
-			var original = new GameStateMessage(GameState.Playing, GameState.Countdown);
-
-			var bytes = MessageSerializer.Serialize(original);
-			var restored = MessageSerializer.Deserialize<GameStateMessage>(bytes);
-
-			Assert.AreEqual("Playing", restored.State);
-			Assert.AreEqual("Countdown", restored.PreviousState);
+			var result = MessageSerializer.Deserialize<InputMessage>("");
+			Assert.IsNull(result);
 		}
 
 		[Test]
-		public void RoundTrip_BaseMessage_PreservesType()
+		public void Deserialize_NullStringReturnsNull()
 		{
-			var original = new BaseMessage("test_type");
-
-			var bytes = MessageSerializer.Serialize(original);
-			var restored = MessageSerializer.Deserialize<BaseMessage>(bytes);
-
-			Assert.AreEqual("test_type", restored.Type);
+			var result = MessageSerializer.Deserialize<InputMessage>(null);
+			Assert.IsNull(result);
 		}
 	}
 }

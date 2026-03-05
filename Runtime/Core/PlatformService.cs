@@ -105,8 +105,8 @@ namespace Nonatomic.CrowdGame
 				return;
 			}
 
-			var bytes = MessageSerializer.Serialize(data);
-			MessageTransport.SendToPlayer(playerId, bytes);
+			var json = MessageSerializer.Serialize(data);
+			MessageTransport.SendToPlayer(playerId, json);
 		}
 
 		public void SendToAllPlayers(object data)
@@ -117,8 +117,8 @@ namespace Nonatomic.CrowdGame
 				return;
 			}
 
-			var bytes = MessageSerializer.Serialize(data);
-			MessageTransport.SendToAllPlayers(bytes);
+			var json = MessageSerializer.Serialize(data);
+			MessageTransport.SendToAllPlayers(json);
 		}
 
 		public void SetControllerLayout(IControllerLayout layout)

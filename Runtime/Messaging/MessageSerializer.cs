@@ -1,22 +1,21 @@
 using UnityEngine;
 
-namespace Nonatomic.CrowdGame.Messaging
+namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Serialisation helper for game-to-player messages.
-	/// Uses JSON by default. Can be extended with MessagePack or custom serialisers.
+	/// JSON serialisation helper for messages between game and phone clients.
 	/// </summary>
 	public static class MessageSerializer
 	{
-		public static byte[] Serialize(object data)
+		public static string Serialize<T>(T data)
 		{
-			var json = JsonUtility.ToJson(data);
-			return System.Text.Encoding.UTF8.GetBytes(json);
+			if (data == null) return null;
+			return JsonUtility.ToJson(data);
 		}
 
-		public static T Deserialize<T>(byte[] data)
+		public static T Deserialize<T>(string json)
 		{
-			var json = System.Text.Encoding.UTF8.GetString(data);
+			if (string.IsNullOrEmpty(json)) return default;
 			return JsonUtility.FromJson<T>(json);
 		}
 	}

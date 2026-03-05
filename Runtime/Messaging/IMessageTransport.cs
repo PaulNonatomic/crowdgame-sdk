@@ -10,10 +10,10 @@ namespace Nonatomic.CrowdGame.Messaging
 	public interface IMessageTransport
 	{
 		bool IsConnected { get; }
-		event Action<string, byte[]> OnMessageReceived;
+		event Action<string, string> OnMessageReceived;
 		Task ConnectAsync(CancellationToken ct = default);
 		Task DisconnectAsync();
-		void SendToPlayer(string playerId, byte[] data);
-		void SendToAllPlayers(byte[] data);
+		void SendToPlayer(string playerId, string data);
+		void SendToAllPlayers(string data);
 	}
 }

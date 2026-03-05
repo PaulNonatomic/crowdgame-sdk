@@ -22,7 +22,7 @@ namespace Nonatomic.CrowdGame.Messaging
 			_maxQueueSize = maxQueueSize;
 		}
 
-		public void SendToPlayer(string playerId, byte[] data)
+		public void SendToPlayer(string playerId, string data)
 		{
 			if (_transport.IsConnected)
 			{
@@ -33,7 +33,7 @@ namespace Nonatomic.CrowdGame.Messaging
 			Enqueue(new QueuedMessage { PlayerId = playerId, Data = data });
 		}
 
-		public void SendToAllPlayers(byte[] data)
+		public void SendToAllPlayers(string data)
 		{
 			if (_transport.IsConnected)
 			{
@@ -86,7 +86,7 @@ namespace Nonatomic.CrowdGame.Messaging
 		private struct QueuedMessage
 		{
 			public string PlayerId;
-			public byte[] Data;
+			public string Data;
 			public bool Broadcast;
 		}
 	}
