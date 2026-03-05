@@ -1,44 +1,28 @@
 #if UNITY_EDITOR
 using UnityEngine.Rendering;
 
-namespace Nonatomic.CrowdGame.Editor
+namespace Nonatomic.CrowdGame.Editor.Rules
 {
-	/// <summary>
-	/// Validates that the Universal Render Pipeline is the active render pipeline.
-	/// </summary>
 	public class RenderPipelineRule : IValidationRule
 	{
 		public string RuleName => "Render Pipeline";
-		public ValidationCategory Category => ValidationCategory.Rendering;
-		public ValidationSeverity Severity => ValidationSeverity.Error;
-		public bool CanAutoFix => false;
 
 		public ValidationResult Validate()
 		{
-			var currentPipeline = GraphicsSettings.currentRenderPipeline;
-			if (currentPipeline == null)
+			var pipeline = GraphicsSettings.currentRenderPipeline;
+			if (pipeline == null)
 			{
-				return ValidationResult.Fail(
-					RuleName,
-					"No render pipeline asset assigned. CrowdGame requires URP.",
-					Category,
-					Severity);
+				return ValidationResult.Fail(RuleName, "No render pipeline asset assigned. CrowdGame requires Universal Render Pipeline (URP).");
 			}
 
-			var typeName = currentPipeline.GetType().Name;
-			if (!typeName.Contains("Universal") && !typeName.Contains("URP"))
+			var typeName = pipeline.GetType().Name;
+			if (!typeName.Contains("Universal"))
 			{
-				return ValidationResult.Fail(
-					RuleName,
-					$"Active render pipeline is {typeName}. CrowdGame requires URP.",
-					Category,
-					Severity);
+				return ValidationResult.Fail(RuleName, $"Current pipeline is {typeName}. CrowdGame requires Universal Render Pipeline (URP).");
 			}
 
-			return ValidationResult.Pass(RuleName, Category);
+			return ValidationResult.Pass(RuleName);
 		}
-
-		public void AutoFix() { }
 	}
 }
 #endif

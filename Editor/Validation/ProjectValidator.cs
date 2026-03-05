@@ -5,17 +5,17 @@ using UnityEngine;
 namespace Nonatomic.CrowdGame.Editor
 {
 	/// <summary>
-	/// Runs all validation rules and produces a ValidationReport.
+	/// Runs all registered validation rules and produces a report.
 	/// </summary>
 	public static class ProjectValidator
 	{
-		private static readonly List<IValidationRule> Rules = new List<IValidationRule>
+		private static readonly List<IValidationRule> Rules = new()
 		{
-			new RenderPipelineRule(),
-			new GraphicsAPIRule(),
-			new ColourSpaceRule(),
-			new BuildTargetRule(),
-			new InputSystemRule()
+			new Rules.RenderPipelineRule(),
+			new Rules.InputSystemRule(),
+			new Rules.BuildTargetRule(),
+			new Rules.GraphicsAPIRule(),
+			new Rules.PlatformConfigRule()
 		};
 
 		public static ValidationReport Validate()
@@ -26,24 +26,18 @@ namespace Nonatomic.CrowdGame.Editor
 			{
 				var result = rule.Validate();
 				report.Results.Add(result);
+
+				if (result.Passed)
+				{
+					Debug.Log($"[CrowdGame Validation] PASS: {result.RuleName}");
+				}
+				else
+				{
+					Debug.LogWarning($"[CrowdGame Validation] FAIL: {result.RuleName} - {result.Message}");
+				}
 			}
 
-			Debug.Log($"[CrowdGame] Validation complete: {report.Summary}");
 			return report;
-		}
-
-		public static void AutoFixAll()
-		{
-			foreach (var rule in Rules)
-			{
-				if (!rule.CanAutoFix) continue;
-
-				var result = rule.Validate();
-				if (result.Passed) continue;
-
-				rule.AutoFix();
-				Debug.Log($"[CrowdGame] Auto-fixed: {rule.RuleName}");
-			}
 		}
 	}
 }

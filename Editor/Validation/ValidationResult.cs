@@ -9,32 +9,24 @@ namespace Nonatomic.CrowdGame.Editor
 		public string RuleName { get; set; }
 		public bool Passed { get; set; }
 		public string Message { get; set; }
-		public ValidationCategory Category { get; set; }
-		public ValidationSeverity Severity { get; set; }
-		public bool CanAutoFix { get; set; }
 
-		public static ValidationResult Pass(string ruleName, ValidationCategory category)
+		public static ValidationResult Pass(string ruleName)
 		{
 			return new ValidationResult
 			{
 				RuleName = ruleName,
 				Passed = true,
-				Message = "OK",
-				Category = category,
-				Severity = ValidationSeverity.Info
+				Message = "OK"
 			};
 		}
 
-		public static ValidationResult Fail(string ruleName, string message, ValidationCategory category, ValidationSeverity severity, bool canAutoFix = false)
+		public static ValidationResult Fail(string ruleName, string message)
 		{
 			return new ValidationResult
 			{
 				RuleName = ruleName,
 				Passed = false,
-				Message = message,
-				Category = category,
-				Severity = severity,
-				CanAutoFix = canAutoFix
+				Message = message
 			};
 		}
 	}

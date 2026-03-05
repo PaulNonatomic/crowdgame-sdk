@@ -40,7 +40,7 @@ namespace Nonatomic.CrowdGame.Editor
 			}
 			else
 			{
-				var message = $"{report.Summary}\n\n";
+				var message = $"{report.FailCount} issue(s) found:\n\n";
 				foreach (var result in report.Results)
 				{
 					if (!result.Passed)
@@ -50,13 +50,6 @@ namespace Nonatomic.CrowdGame.Editor
 				}
 				EditorUtility.DisplayDialog("CrowdGame Validation", message, "OK");
 			}
-		}
-
-		[MenuItem("CrowdGame/Auto-Fix Issues", priority = 101)]
-		private static void AutoFixIssues()
-		{
-			ProjectValidator.AutoFixAll();
-			EditorUtility.DisplayDialog("CrowdGame", "Auto-fix complete. Run validation to check remaining issues.", "OK");
 		}
 
 		[MenuItem("CrowdGame/Open Documentation", priority = 200)]
