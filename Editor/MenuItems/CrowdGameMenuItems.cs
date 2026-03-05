@@ -5,57 +5,67 @@ using UnityEngine;
 namespace Nonatomic.CrowdGame.Editor
 {
 	/// <summary>
-	/// Menu items for common CrowdGame actions.
+	/// Top-level CrowdGame menu items in the Unity Editor.
 	/// </summary>
 	public static class CrowdGameMenuItems
 	{
-		[MenuItem("GameObject/CrowdGame/Platform", false, 10)]
-		private static void CreatePlatformGameObject(MenuCommand menuCommand)
+		[MenuItem("CrowdGame/Dashboard", priority = 0)]
+		private static void OpenDashboard()
 		{
-			var go = new GameObject("CrowdGame Platform");
-			var bootstrapper = go.AddComponent<PlatformBootstrapper>();
-
-			var guids = AssetDatabase.FindAssets("t:PlatformConfig");
-			if (guids.Length > 0)
-			{
-				var path = AssetDatabase.GUIDToAssetPath(guids[0]);
-				var config = AssetDatabase.LoadAssetAtPath<PlatformConfig>(path);
-				var so = new SerializedObject(bootstrapper);
-				so.FindProperty("<Config>k__BackingField").objectReferenceValue = config;
-				so.ApplyModifiedProperties();
-			}
-
-			GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
-			Undo.RegisterCreatedObjectUndo(go, "Create CrowdGame Platform");
-			Selection.activeObject = go;
+			CrowdGameDashboard.ShowWindow();
 		}
 
-		[MenuItem("CrowdGame/Validate Project", priority = 100)]
+		[MenuItem("CrowdGame/Validate Project", priority = 20)]
 		private static void ValidateProject()
 		{
 			var report = ProjectValidator.Validate();
 			if (report.AllPassed)
 			{
-				EditorUtility.DisplayDialog("CrowdGame Validation", "All validation checks passed!", "OK");
+				Debug.Log($"[CrowdGame] All {report.PassCount} validation checks passed.");
 			}
 			else
 			{
-				var message = $"{report.FailCount} issue(s) found:\n\n";
-				foreach (var result in report.Results)
-				{
-					if (!result.Passed)
-					{
-						message += $"  {result.RuleName}: {result.Message}\n";
-					}
-				}
-				EditorUtility.DisplayDialog("CrowdGame Validation", message, "OK");
+				Debug.LogWarning($"[CrowdGame] Validation: {report.PassCount} passed, {report.FailCount} failed.");
 			}
 		}
 
-		[MenuItem("CrowdGame/Open Documentation", priority = 200)]
-		private static void OpenDocumentation()
+		[MenuItem("CrowdGame/Create Platform Config", priority = 40)]
+		private static void CreateConfig()
 		{
-			Application.OpenURL("https://github.com/PaulNonatomic/crowdgame-sdk");
+			var config = ScriptableObject.CreateInstance<PlatformConfig>();
+			var path = EditorUtility.SaveFilePanelInProject(
+				"Create Platform Config",
+				"CrowdGameConfig",
+				"asset",
+				"Choose where to save the PlatformConfig asset");
+
+			if (!string.IsNullOrEmpty(path))
+			{
+				AssetDatabase.CreateAsset(config, path);
+				AssetDatabase.SaveAssets();
+				Selection.activeObject = config;
+				EditorGUIUtility.PingObject(config);
+			}
+		}
+
+		[MenuItem("GameObject/CrowdGame/Platform", false, 10)]
+		private static void CreatePlatformGameObject(MenuCommand menuCommand)
+		{
+			var go = new GameObject("CrowdGame Platform");
+			go.AddComponent<PlatformBootstrapper>();
+			GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
+			Undo.RegisterCreatedObjectUndo(go, "Create CrowdGame Platform");
+			Selection.activeObject = go;
+		}
+
+		[MenuItem("GameObject/CrowdGame/Local Input Provider", false, 11)]
+		private static void CreateLocalInputGameObject(MenuCommand menuCommand)
+		{
+			var go = new GameObject("CrowdGame Local Input");
+			go.AddComponent<LocalInputProvider>();
+			GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
+			Undo.RegisterCreatedObjectUndo(go, "Create CrowdGame Local Input");
+			Selection.activeObject = go;
 		}
 	}
 }

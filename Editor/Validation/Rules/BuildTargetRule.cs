@@ -5,14 +5,14 @@ namespace Nonatomic.CrowdGame.Editor.Rules
 {
 	public class BuildTargetRule : IValidationRule
 	{
-		public string RuleName => "Build Target (Linux)";
+		public string RuleName => "Build Target";
 
 		public ValidationResult Validate()
 		{
-			var isInstalled = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, BuildTarget.StandaloneLinux64);
-			if (!isInstalled)
+			var hasSupportInstalled = BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, BuildTarget.StandaloneLinux64);
+			if (!hasSupportInstalled)
 			{
-				return ValidationResult.Fail(RuleName, "Linux Standalone build support is not installed. Add it via Unity Hub.");
+				return ValidationResult.Fail(RuleName, "Linux Standalone build support is not installed. CrowdGame deploys to Linux servers.");
 			}
 
 			return ValidationResult.Pass(RuleName);

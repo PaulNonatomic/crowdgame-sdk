@@ -1,13 +1,14 @@
 #if UNITY_EDITOR
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Nonatomic.CrowdGame.Editor.Rules
 {
 	public class GraphicsAPIRule : IValidationRule
 	{
-		public string RuleName => "Graphics API (Linux)";
+		public string RuleName => "Graphics API";
 
 		public ValidationResult Validate()
 		{
@@ -17,9 +18,9 @@ namespace Nonatomic.CrowdGame.Editor.Rules
 			}
 
 			var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneLinux64);
-			if (apis == null || !apis.Contains(GraphicsDeviceType.Vulkan))
+			if (!apis.Contains(GraphicsDeviceType.Vulkan))
 			{
-				return ValidationResult.Fail(RuleName, "Vulkan not in Linux Graphics APIs. Required for GPU rendering in Docker.");
+				return ValidationResult.Fail(RuleName, "Vulkan is not in the Linux graphics APIs list. CrowdGame requires Vulkan for GPU rendering.");
 			}
 
 			return ValidationResult.Pass(RuleName);
