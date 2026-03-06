@@ -15,7 +15,13 @@ namespace Nonatomic.CrowdGame.Editor
 			new Rules.InputSystemRule(),
 			new Rules.BuildTargetRule(),
 			new Rules.GraphicsAPIRule(),
-			new Rules.PlatformConfigRule()
+			new Rules.ColourSpaceRule(),
+			new Rules.PlatformConfigRule(),
+			new Rules.PlatformInitRule(),
+			new Rules.StreamQualityRule(),
+			new Rules.AlphaStackRule(),
+			new Rules.ResolutionRule(),
+			new Rules.ShaderCompatibilityRule()
 		};
 
 		public static ValidationReport Validate()
@@ -29,11 +35,11 @@ namespace Nonatomic.CrowdGame.Editor
 
 				if (result.Passed)
 				{
-					Debug.Log($"[CrowdGame Validation] PASS: {result.RuleName}");
+					CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Validation PASS: {result.RuleName}");
 				}
 				else
 				{
-					Debug.LogWarning($"[CrowdGame Validation] FAIL: {result.RuleName} - {result.Message}");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Editor, $"Validation FAIL: {result.RuleName} - {result.Message}");
 				}
 			}
 
