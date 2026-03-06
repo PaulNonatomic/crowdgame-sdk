@@ -26,6 +26,7 @@ namespace Nonatomic.CrowdGame
 		private PlatformConfig _config;
 		private bool _initialised;
 		private IGameLifecycle _lifecycle;
+		private IControllerLayout _controllerLayout;
 
 		public void Initialise(PlatformConfig config)
 		{
@@ -41,6 +42,8 @@ namespace Nonatomic.CrowdGame
 			{
 				_playerManager.MaxPlayers = config.MaxPlayers;
 			}
+
+			AutoWireSubsystems(config);
 
 			_initialised = true;
 
@@ -123,8 +126,15 @@ namespace Nonatomic.CrowdGame
 
 		public void SetControllerLayout(IControllerLayout layout)
 		{
-			// TODO: Send layout definition to connected phone clients
+			_controllerLayout = layout;
 			Debug.Log($"[CrowdGame] Controller layout set: {layout?.LayoutName}");
+
+			if (MessageTransport != null && MessageTransport.IsConnected && layout != null)
+			{
+				var message = new ControllerUpdateMessage(layout);
+				var json = MessageSerializer.Serialize(message);
+				MessageTransport.SendToAllPlayers(json);
+			}
 		}
 
 		public void SetGameState(GameState state)
@@ -139,6 +149,11 @@ namespace Nonatomic.CrowdGame
 				InputProvider.OnPlayerJoinRequested -= HandlePlayerJoinRequested;
 				InputProvider.OnPlayerDisconnected -= HandlePlayerDisconnected;
 				InputProvider.OnInputReceived -= HandleInputReceived;
+
+				if (InputProvider is IDisposable disposableInput)
+				{
+					disposableInput.Dispose();
+				}
 			}
 
 			if (_lifecycle != null)
@@ -146,8 +161,50 @@ namespace Nonatomic.CrowdGame
 				_lifecycle.OnStateChanged -= HandleGameStateChanged;
 			}
 
+			if (MessageTransport is IDisposable disposableTransport)
+			{
+				disposableTransport.Dispose();
+			}
+
 			_playerManager.Clear();
 			_initialised = false;
+		}
+
+		private void AutoWireSubsystems(PlatformConfig config)
+		{
+			// Lifecycle — always wire
+			if (Lifecycle == null)
+			{
+				RegisterLifecycle(new GameLifecycleManager());
+			}
+
+			// Message transport
+			if (MessageTransport == null)
+			{
+				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
+				RegisterMessageTransport(new WebSocketMessageTransport(signalingUrl));
+			}
+
+			// Input provider — editor uses local keyboard, builds use WebSocket
+			if (InputProvider == null)
+			{
+#if UNITY_EDITOR
+				Debug.Log("[CrowdGame] Editor mode: use LocalInputProvider on a GameObject for keyboard input.");
+#else
+				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
+				RegisterInputProvider(new WebSocketInputProvider(signalingUrl));
+#endif
+			}
+
+			// Streaming service
+			if (StreamingService == null)
+			{
+#if UNITY_EDITOR
+				// No streaming in editor — games test with local input only
+#else
+				RegisterStreamingService(new StreamingService());
+#endif
+			}
 		}
 
 		private void HandlePlayerJoinRequested(string playerId, PlayerMetadata metadata)
