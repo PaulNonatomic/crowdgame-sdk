@@ -3,6 +3,7 @@
 	"rootNamespace": "Nonatomic.CrowdGame.Tests.EditMode",
 	"references": [
 		"Nonatomic.CrowdGame.Runtime",
+		"Nonatomic.CrowdGame.Editor",
 		"Unity.InputSystem",
 		"UnityEngine.TestRunner",
 		"UnityEditor.TestRunner"
