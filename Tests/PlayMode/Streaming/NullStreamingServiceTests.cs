@@ -124,5 +124,45 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 
 			Assert.DoesNotThrow(() => _service.SetQuality(StreamQuality.QHD_1440p));
 		}
+
+		[UnityTest]
+		public IEnumerator StartAsync_AlphaStacking_DoublesHeight()
+		{
+			var config = new StreamingConfig
+			{
+				Quality = StreamQuality.HD_1080p,
+				AlphaStackingEnabled = true,
+				TargetFrameRate = 60,
+				TargetBitrate = 8_000_000
+			};
+
+			var task = _service.StartAsync(config);
+			while (!task.IsCompleted) yield return null;
+
+			Assert.AreEqual(1920, _service.Diagnostics.Width);
+			Assert.AreEqual(2160, _service.Diagnostics.Height);
+		}
+
+		[UnityTest]
+		public IEnumerator StopAndRestart_WorksCorrectly()
+		{
+			var config = new StreamingConfig
+			{
+				Quality = StreamQuality.HD_1080p,
+				TargetFrameRate = 60,
+				TargetBitrate = 8_000_000
+			};
+
+			var task = _service.StartAsync(config);
+			while (!task.IsCompleted) yield return null;
+			Assert.AreEqual(StreamState.Streaming, _service.State);
+
+			_service.StopAsync();
+			Assert.AreEqual(StreamState.Idle, _service.State);
+
+			task = _service.StartAsync(config);
+			while (!task.IsCompleted) yield return null;
+			Assert.AreEqual(StreamState.Streaming, _service.State);
+		}
 	}
 }
