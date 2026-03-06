@@ -62,6 +62,9 @@ namespace Nonatomic.CrowdGame
 		/// <summary>Read-only list of active player sessions.</summary>
 		public static IReadOnlyList<IPlayerSession> Players => Instance?.Players ?? Array.Empty<IPlayerSession>();
 
+		/// <summary>The active streaming service, if available.</summary>
+		public static Streaming.IStreamingService StreamingService => Instance?.StreamingService;
+
 		/// <summary>The active platform instance. Null if not initialised.</summary>
 		public static IPlatform Instance { get; private set; }
 
@@ -76,7 +79,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (Instance != null)
 			{
-				Debug.LogWarning("[CrowdGame] Platform already initialised. Call Shutdown() first to re-initialise.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "Platform already initialised. Call Shutdown() first to re-initialise.");
 				return;
 			}
 
@@ -93,7 +96,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (Instance != null)
 			{
-				Debug.LogWarning("[CrowdGame] Platform already initialised. Call Shutdown() first.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "Platform already initialised. Call Shutdown() first.");
 				return;
 			}
 
@@ -138,14 +141,14 @@ namespace Nonatomic.CrowdGame
 			PlatformEvents.ClearAll();
 			LifecycleEvents.ClearAll();
 
-			Debug.Log("[CrowdGame] Platform shut down.");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Platform shut down.");
 		}
 
 		private static void EnsureInitialised()
 		{
 			if (Instance == null)
 			{
-				Debug.LogError("[CrowdGame] Platform not initialised. Call Platform.Initialise() or add the CrowdGame Platform prefab to your scene.");
+				CrowdGameLogger.Error(CrowdGameLogger.Category.Core, "Platform not initialised. Call Platform.Initialise() or add the CrowdGame Platform prefab to your scene.");
 			}
 		}
 	}
