@@ -34,7 +34,7 @@ namespace Nonatomic.CrowdGame
 					existing.Reconnect();
 					_registry.AddExisting(existing);
 
-					Debug.Log($"[CrowdGame] Player reconnected: {playerId}");
+					CrowdGameLogger.Info(CrowdGameLogger.Category.Players, $"Player reconnected: {playerId}");
 					OnPlayerReconnected?.Invoke(existing);
 					PlatformEvents.RaisePlayerJoined(existing);
 					return existing;
@@ -42,7 +42,7 @@ namespace Nonatomic.CrowdGame
 
 				if (_registry.Count >= MaxPlayers)
 				{
-					Debug.LogWarning($"[CrowdGame] Max players ({MaxPlayers}) reached. Rejecting {playerId}.");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Players, $"Max players ({MaxPlayers}) reached. Rejecting {playerId}.");
 					return null;
 				}
 

@@ -26,7 +26,7 @@ namespace Nonatomic.CrowdGame.Streaming
 			_config = config;
 			SetState(StreamState.Connecting);
 
-			Debug.Log("[CrowdGame] NullStreamingService: Simulating stream start...");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Streaming, "NullStreamingService: Simulating stream start...");
 			await Task.Delay(500, ct);
 
 			Diagnostics.Width = StreamResolutionValidator.GetResolution(config.Quality, config.AlphaStackingEnabled).x;
@@ -41,7 +41,7 @@ namespace Nonatomic.CrowdGame.Streaming
 		public Task StopAsync()
 		{
 			SetState(StreamState.Idle);
-			Debug.Log("[CrowdGame] NullStreamingService: Stream stopped.");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Streaming, "NullStreamingService: Stream stopped.");
 			return Task.CompletedTask;
 		}
 

@@ -59,13 +59,13 @@ namespace Nonatomic.CrowdGame
 			try
 			{
 				await _socket.ConnectAsync(new Uri(_url), _cts.Token);
-				Debug.Log($"[CrowdGame.Input] WebSocket connected to {_url}");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"WebSocket connected to {_url}");
 
 				_ = RunReceiveLoop(_cts.Token);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				Debug.LogWarning($"[CrowdGame.Input] Connection failed: {ex.Message}");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Connection failed: {ex.Message}");
 				throw;
 			}
 		}
@@ -83,12 +83,12 @@ namespace Nonatomic.CrowdGame
 				}
 				catch (Exception ex)
 				{
-					Debug.LogWarning($"[CrowdGame.Input] Disconnect error: {ex.Message}");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Disconnect error: {ex.Message}");
 				}
 			}
 
 			_cts?.Cancel();
-			Debug.Log("[CrowdGame.Input] Disconnected");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Disconnected");
 		}
 
 		/// <summary>
@@ -104,7 +104,7 @@ namespace Nonatomic.CrowdGame
 				}
 				catch (Exception ex)
 				{
-					Debug.LogError($"[CrowdGame.Input] Error in event handler: {ex}");
+					CrowdGameLogger.Error(CrowdGameLogger.Category.Input, $"Error in event handler: {ex}");
 				}
 			}
 		}
@@ -142,7 +142,7 @@ namespace Nonatomic.CrowdGame
 
 						if (result.MessageType == WebSocketMessageType.Close)
 						{
-							Debug.Log("[CrowdGame.Input] Server closed connection");
+							CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Server closed connection");
 							HandleDisconnect(ct);
 							return;
 						}
@@ -163,12 +163,12 @@ namespace Nonatomic.CrowdGame
 			}
 			catch (WebSocketException ex)
 			{
-				Debug.LogWarning($"[CrowdGame.Input] Receive error: {ex.Message}");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Receive error: {ex.Message}");
 				HandleDisconnect(ct);
 			}
 			catch (Exception ex)
 			{
-				Debug.LogError($"[CrowdGame.Input] Unexpected receive error: {ex}");
+				CrowdGameLogger.Error(CrowdGameLogger.Category.Input, $"Unexpected receive error: {ex}");
 				HandleDisconnect(ct);
 			}
 		}
@@ -182,7 +182,7 @@ namespace Nonatomic.CrowdGame
 
 				if (string.IsNullOrEmpty(type))
 				{
-					Debug.LogWarning("[CrowdGame.Input] Received message with no type field");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, "Received message with no type field");
 					return;
 				}
 
@@ -204,13 +204,13 @@ namespace Nonatomic.CrowdGame
 						break;
 
 					default:
-						Debug.LogWarning($"[CrowdGame.Input] Unknown message type: {type}");
+						CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Unknown message type: {type}");
 						break;
 				}
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"[CrowdGame.Input] Failed to parse message: {ex.Message}");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Failed to parse message: {ex.Message}");
 			}
 		}
 
@@ -261,7 +261,7 @@ namespace Nonatomic.CrowdGame
 
 			while (_reconnectEnabled && !ct.IsCancellationRequested)
 			{
-				Debug.Log($"[CrowdGame.Input] Reconnecting in {delay}ms...");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"Reconnecting in {delay}ms...");
 
 				try
 				{
@@ -278,7 +278,7 @@ namespace Nonatomic.CrowdGame
 					_socket = new ClientWebSocket();
 					await _socket.ConnectAsync(new Uri(_url), ct);
 
-					Debug.Log($"[CrowdGame.Input] Reconnected to {_url}");
+					CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"Reconnected to {_url}");
 					_ = RunReceiveLoop(ct);
 					return;
 				}
@@ -288,7 +288,7 @@ namespace Nonatomic.CrowdGame
 				}
 				catch (Exception ex)
 				{
-					Debug.LogWarning($"[CrowdGame.Input] Reconnect failed: {ex.Message}");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Reconnect failed: {ex.Message}");
 					delay = Math.Min(delay * 2, MaxReconnectDelayMs);
 				}
 			}

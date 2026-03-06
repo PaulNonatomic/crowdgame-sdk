@@ -72,7 +72,7 @@ namespace Nonatomic.CrowdGame
 				}
 				else
 				{
-					Debug.LogError($"[CrowdGame] Unhandled async exception: {ex}");
+					CrowdGameLogger.Error(CrowdGameLogger.Category.Core, $"Unhandled async exception: {ex}");
 				}
 			}
 		}

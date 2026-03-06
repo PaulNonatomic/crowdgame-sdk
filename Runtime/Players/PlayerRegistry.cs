@@ -40,7 +40,7 @@ namespace Nonatomic.CrowdGame
 			{
 				if (_players.ContainsKey(playerId))
 				{
-					Debug.LogWarning($"[CrowdGame] Player {playerId} already registered.");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Players, $"Player {playerId} already registered.");
 					return _players[playerId];
 				}
 
@@ -48,7 +48,7 @@ namespace Nonatomic.CrowdGame
 				_players[playerId] = session;
 				_playerList.Add(session);
 
-				Debug.Log($"[CrowdGame] Player joined: {playerId} ({metadata?.DisplayName ?? "anonymous"})");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Players, $"Player joined: {playerId} ({metadata?.DisplayName ?? "anonymous"})");
 				return session;
 			}
 		}
@@ -59,7 +59,7 @@ namespace Nonatomic.CrowdGame
 			{
 				if (_players.ContainsKey(session.PlayerId))
 				{
-					Debug.LogWarning($"[CrowdGame] Player {session.PlayerId} already registered.");
+					CrowdGameLogger.Warning(CrowdGameLogger.Category.Players, $"Player {session.PlayerId} already registered.");
 					return _players[session.PlayerId];
 				}
 
@@ -93,7 +93,7 @@ namespace Nonatomic.CrowdGame
 				_players.Remove(playerId);
 				_playerList.Remove(session);
 
-				Debug.Log($"[CrowdGame] Player left: {playerId}");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Players, $"Player left: {playerId}");
 				return session;
 			}
 		}

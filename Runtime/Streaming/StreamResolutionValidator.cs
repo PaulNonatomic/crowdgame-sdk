@@ -48,7 +48,7 @@ namespace Nonatomic.CrowdGame.Streaming
 		{
 			if (requested == StreamQuality.UHD_4K)
 			{
-				Debug.LogWarning("[CrowdGame] UHD_4K with alpha stacking exceeds NVENC limits. Clamping to QHD_1440p.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Streaming, "UHD_4K with alpha stacking exceeds NVENC limits. Clamping to QHD_1440p.");
 				return StreamQuality.QHD_1440p;
 			}
 
