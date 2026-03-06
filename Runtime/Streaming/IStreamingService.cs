@@ -23,6 +23,7 @@ namespace Nonatomic.CrowdGame.Streaming
 	{
 		Idle,
 		Connecting,
+		Negotiating,
 		Streaming,
 		Disconnected,
 		Error

@@ -1,14 +1,17 @@
+using Nonatomic.CrowdGame.Streaming;
 using UnityEngine;
 
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Runtime diagnostics overlay showing FPS, latency, player count, and stream state.
+	/// Runtime diagnostics overlay showing FPS, latency, player count, stream state,
+	/// and live streaming diagnostics when available.
 	/// Attach to a GameObject in the scene or include in the CrowdGame Diagnostics prefab.
 	/// </summary>
 	public class DiagnosticsOverlay : MonoBehaviour
 	{
 		[SerializeField] private bool _showInBuild = true;
+		[SerializeField] private bool _showStreamingStats = true;
 		[SerializeField] private int _fontSize = 14;
 		[SerializeField] private Color _textColour = Color.white;
 		[SerializeField] private Color _backgroundColour = new(0f, 0f, 0f, 0.5f);
@@ -55,6 +58,22 @@ namespace Nonatomic.CrowdGame
 			var lines = $"FPS: {_fps:F0}";
 			lines += $"\nPlayers: {(Platform.IsInitialised ? Platform.PlayerCount : 0)}";
 			lines += $"\nState: {(Platform.IsInitialised ? Platform.CurrentState.ToString() : "N/A")}";
+
+			if (_showStreamingStats && Platform.IsInitialised)
+			{
+				var streaming = Platform.StreamingService;
+				if (streaming != null)
+				{
+					lines += $"\nStream: {streaming.State}";
+					var diag = streaming.Diagnostics;
+					if (streaming.State == StreamState.Streaming && diag != null)
+					{
+						lines += $"\n  {diag.Width}x{diag.Height} @ {diag.Fps:F0}fps";
+						lines += $"\n  {diag.Bitrate / 1_000_000f:F1} Mbps | {diag.Latency:F0}ms";
+						lines += $"\n  Loss: {diag.PacketLoss:F1}% | {diag.EncoderType ?? "N/A"}";
+					}
+				}
+			}
 
 			var content = new GUIContent(lines);
 			var size = _style.CalcSize(content);

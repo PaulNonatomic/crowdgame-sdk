@@ -21,6 +21,16 @@
 			"name": "com.unity.render-pipelines.universal",
 			"expression": "17.0.0",
 			"define": "CROWDGAME_URP"
+		},
+		{
+			"name": "com.unity.renderstreaming",
+			"expression": "3.1.0-exp.1",
+			"define": "CROWDGAME_RENDER_STREAMING"
+		},
+		{
+			"name": "com.unity.webrtc",
+			"expression": "3.0.0-pre.1",
+			"define": "CROWDGAME_WEBRTC"
 		}
 	],
 	"noEngineReferences": false
