@@ -875,7 +875,7 @@ MonoBehaviour:
   _spawnHeight: 1
   _moveSpeed: 8
   _boostMultiplier: 1.5
-  _playerPrefab: {fileID: 0}
+  _playerPrefab: {fileID: 1000000, guid: b1c90ddf44f848d1a9d9cbabc882a7de, type: 2}
 --- !u!1 &718394056
 GameObject:
   m_ObjectHideFlags: 0
