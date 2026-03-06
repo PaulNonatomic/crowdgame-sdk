@@ -92,7 +92,7 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		{
 			Platform.Initialise();
 
-			var layout = new ControllerLayoutBuilder("Test")
+			var layout = ControllerLayoutBuilder.Create("Test")
 				.AddButton("btn", "Fire")
 				.Build();
 
