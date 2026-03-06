@@ -7,9 +7,10 @@ using UnityEngine;
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Editor-only input provider that maps keyboard/mouse/gamepad to platform input.
+	/// Editor-only input provider that maps keyboard to platform input.
 	/// Allows developers to test games without a browser, Docker, or phone.
 	/// Supports simulating multiple players via configurable key bindings.
+	/// Inert in builds — WebSocketInputProvider handles real input at runtime.
 	/// </summary>
 	public class LocalInputProvider : MonoBehaviour, IInputProvider
 	{
@@ -26,15 +27,18 @@ namespace Nonatomic.CrowdGame
 
 		private void Awake()
 		{
+#if UNITY_EDITOR
 			if (_playerBindings.Count == 0)
 			{
 				_playerBindings.Add(LocalPlayerBinding.DefaultWASD());
 				_playerBindings.Add(LocalPlayerBinding.DefaultArrows());
 			}
+#endif
 		}
 
 		public Task ConnectAsync(CancellationToken ct = default)
 		{
+#if UNITY_EDITOR
 			IsConnected = true;
 			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Local input provider connected.");
 
@@ -42,7 +46,7 @@ namespace Nonatomic.CrowdGame
 			{
 				JoinLocalPlayer(_playerBindings[0]);
 			}
-
+#endif
 			return Task.CompletedTask;
 		}
 
@@ -87,6 +91,7 @@ namespace Nonatomic.CrowdGame
 
 		private void Update()
 		{
+#if UNITY_EDITOR
 			if (!IsConnected) return;
 
 			foreach (var binding in _playerBindings)
@@ -95,7 +100,9 @@ namespace Nonatomic.CrowdGame
 
 				ProcessJoystickInput(binding);
 				ProcessButtonInput(binding);
+				ProcessSelectionInput(binding);
 			}
+#endif
 		}
 
 		private void ProcessJoystickInput(LocalPlayerBinding binding)
@@ -131,22 +138,53 @@ namespace Nonatomic.CrowdGame
 
 		private void ProcessButtonInput(LocalPlayerBinding binding)
 		{
-			if (Input.GetKeyDown(binding.ActionButton))
+			if (!Input.GetKeyDown(binding.ActionButton)) return;
+
+			var message = new InputMessage
 			{
+				PlayerId = binding.PlayerId,
+				ControlId = "action",
+				ControlType = ControlType.Button,
+				Timestamp = Time.timeAsDouble,
+				Button = new ButtonData
+				{
+					Pressed = true,
+					Label = "Action"
+				}
+			};
+
+			OnInputReceived?.Invoke(binding.PlayerId, message);
+		}
+
+		private void ProcessSelectionInput(LocalPlayerBinding binding)
+		{
+			KeyCode[] selectionKeys =
+			{
+				binding.Selection1,
+				binding.Selection2,
+				binding.Selection3,
+				binding.Selection4
+			};
+
+			for (var i = 0; i < selectionKeys.Length; i++)
+			{
+				if (!Input.GetKeyDown(selectionKeys[i])) continue;
+
 				var message = new InputMessage
 				{
 					PlayerId = binding.PlayerId,
-					ControlId = "action",
-					ControlType = ControlType.Button,
+					ControlId = "selection",
+					ControlType = ControlType.Selection,
 					Timestamp = Time.timeAsDouble,
-					Button = new ButtonData
+					Selection = new SelectionData
 					{
-						Pressed = true,
-						Label = "Action"
+						SelectedIndex = i,
+						Options = new[] { "A", "B", "C", "D" }
 					}
 				};
 
 				OnInputReceived?.Invoke(binding.PlayerId, message);
+				return;
 			}
 		}
 	}
@@ -164,6 +202,10 @@ namespace Nonatomic.CrowdGame
 		[field: SerializeField] public KeyCode MoveLeft { get; set; } = KeyCode.A;
 		[field: SerializeField] public KeyCode MoveRight { get; set; } = KeyCode.D;
 		[field: SerializeField] public KeyCode ActionButton { get; set; } = KeyCode.Space;
+		[field: SerializeField] public KeyCode Selection1 { get; set; } = KeyCode.Alpha1;
+		[field: SerializeField] public KeyCode Selection2 { get; set; } = KeyCode.Alpha2;
+		[field: SerializeField] public KeyCode Selection3 { get; set; } = KeyCode.Alpha3;
+		[field: SerializeField] public KeyCode Selection4 { get; set; } = KeyCode.Alpha4;
 
 		public static LocalPlayerBinding DefaultWASD()
 		{
@@ -175,7 +217,11 @@ namespace Nonatomic.CrowdGame
 				MoveDown = KeyCode.S,
 				MoveLeft = KeyCode.A,
 				MoveRight = KeyCode.D,
-				ActionButton = KeyCode.Space
+				ActionButton = KeyCode.Space,
+				Selection1 = KeyCode.Alpha1,
+				Selection2 = KeyCode.Alpha2,
+				Selection3 = KeyCode.Alpha3,
+				Selection4 = KeyCode.Alpha4
 			};
 		}
 
@@ -189,7 +235,11 @@ namespace Nonatomic.CrowdGame
 				MoveDown = KeyCode.DownArrow,
 				MoveLeft = KeyCode.LeftArrow,
 				MoveRight = KeyCode.RightArrow,
-				ActionButton = KeyCode.RightControl
+				ActionButton = KeyCode.RightControl,
+				Selection1 = KeyCode.Alpha1,
+				Selection2 = KeyCode.Alpha2,
+				Selection3 = KeyCode.Alpha3,
+				Selection4 = KeyCode.Alpha4
 			};
 		}
 	}

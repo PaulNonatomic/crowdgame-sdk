@@ -189,7 +189,17 @@ namespace Nonatomic.CrowdGame
 			if (InputProvider == null)
 			{
 #if UNITY_EDITOR
-				CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Editor mode: use LocalInputProvider on a GameObject for keyboard input.");
+				var localProvider = UnityEngine.Object.FindAnyObjectByType<LocalInputProvider>();
+				if (localProvider != null)
+				{
+					RegisterInputProvider(localProvider);
+					localProvider.ConnectAsync().FireAndForget();
+					CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Auto-wired LocalInputProvider from scene.");
+				}
+				else
+				{
+					CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Editor mode: add a LocalInputProvider to the scene for keyboard input.");
+				}
 #else
 				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
 				RegisterInputProvider(new WebSocketInputProvider(signalingUrl));
