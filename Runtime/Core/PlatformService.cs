@@ -32,7 +32,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (_initialised)
 			{
-				Debug.LogWarning("[CrowdGame] Platform already initialised.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "Platform already initialised.");
 				return;
 			}
 
@@ -47,7 +47,7 @@ namespace Nonatomic.CrowdGame
 
 			_initialised = true;
 
-			Debug.Log("[CrowdGame] Platform initialised.");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Platform initialised.");
 		}
 
 		public void RegisterInputProvider(IInputProvider provider)
@@ -104,7 +104,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (MessageTransport == null)
 			{
-				Debug.LogWarning("[CrowdGame] No message transport registered.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "No message transport registered.");
 				return;
 			}
 
@@ -116,7 +116,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (MessageTransport == null)
 			{
-				Debug.LogWarning("[CrowdGame] No message transport registered.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "No message transport registered.");
 				return;
 			}
 
@@ -127,7 +127,7 @@ namespace Nonatomic.CrowdGame
 		public void SetControllerLayout(IControllerLayout layout)
 		{
 			_controllerLayout = layout;
-			Debug.Log($"[CrowdGame] Controller layout set: {layout?.LayoutName}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Core, $"Controller layout set: {layout?.LayoutName}");
 
 			if (MessageTransport != null && MessageTransport.IsConnected && layout != null)
 			{
@@ -189,7 +189,7 @@ namespace Nonatomic.CrowdGame
 			if (InputProvider == null)
 			{
 #if UNITY_EDITOR
-				Debug.Log("[CrowdGame] Editor mode: use LocalInputProvider on a GameObject for keyboard input.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Editor mode: use LocalInputProvider on a GameObject for keyboard input.");
 #else
 				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
 				RegisterInputProvider(new WebSocketInputProvider(signalingUrl));

@@ -47,14 +47,14 @@ namespace Nonatomic.CrowdGame
 
 			if (!CanTransitionTo(state))
 			{
-				Debug.LogWarning($"[CrowdGame] Invalid state transition: {CurrentState} -> {state}");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Lifecycle, $"Invalid state transition: {CurrentState} -> {state}");
 				return;
 			}
 
 			PreviousState = CurrentState;
 			CurrentState = state;
 
-			Debug.Log($"[CrowdGame] Game state: {PreviousState} -> {CurrentState}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Lifecycle, $"Game state: {PreviousState} -> {CurrentState}");
 
 			OnStateChanged?.Invoke(PreviousState, CurrentState);
 			PlatformEvents.RaiseGameStateChanged(CurrentState);

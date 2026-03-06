@@ -21,11 +21,11 @@ namespace Nonatomic.CrowdGame.Editor
 			var report = ProjectValidator.Validate();
 			if (report.AllPassed)
 			{
-				Debug.Log($"[CrowdGame] All {report.PassCount} validation checks passed.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"All {report.PassCount} validation checks passed.");
 			}
 			else
 			{
-				Debug.LogWarning($"[CrowdGame] Validation: {report.PassCount} passed, {report.FailCount} failed.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Editor, $"Validation: {report.PassCount} passed, {report.FailCount} failed.");
 			}
 		}
 

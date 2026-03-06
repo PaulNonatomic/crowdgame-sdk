@@ -177,5 +177,104 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 
 			Assert.IsNull(received);
 		}
+
+		[Test]
+		public void TouchInput_RoutesCorrectly()
+		{
+			InputMessage received = null;
+			Platform.OnPlayerInput += (_, input) => received = input;
+
+			_input.SimulateJoin("player1", new PlayerMetadata());
+			_input.SimulateInput("player1", new InputMessage
+			{
+				PlayerId = "player1",
+				ControlType = ControlType.Touch,
+				Touch = new TouchData { X = 0.5f, Y = 0.8f, Phase = TouchPhase.Began }
+			});
+
+			Assert.AreEqual(ControlType.Touch, received.ControlType);
+			Assert.AreEqual(0.5f, received.Touch.X, 0.001f);
+			Assert.AreEqual(TouchPhase.Began, received.Touch.Phase);
+		}
+
+		[Test]
+		public void TextInput_RoutesCorrectly()
+		{
+			InputMessage received = null;
+			Platform.OnPlayerInput += (_, input) => received = input;
+
+			_input.SimulateJoin("player1", new PlayerMetadata());
+			_input.SimulateInput("player1", new InputMessage
+			{
+				PlayerId = "player1",
+				ControlType = ControlType.Text,
+				Text = new TextData { Value = "Hello World", Submitted = true }
+			});
+
+			Assert.AreEqual(ControlType.Text, received.ControlType);
+			Assert.AreEqual("Hello World", received.Text.Value);
+			Assert.IsTrue(received.Text.Submitted);
+		}
+
+		[Test]
+		public void TiltInput_RoutesCorrectly()
+		{
+			InputMessage received = null;
+			Platform.OnPlayerInput += (_, input) => received = input;
+
+			_input.SimulateJoin("player1", new PlayerMetadata());
+			_input.SimulateInput("player1", new InputMessage
+			{
+				PlayerId = "player1",
+				ControlType = ControlType.Tilt,
+				Tilt = new TiltData { Pitch = 45f, Roll = -10f, Yaw = 5f }
+			});
+
+			Assert.AreEqual(ControlType.Tilt, received.ControlType);
+			Assert.AreEqual(45f, received.Tilt.Pitch, 0.001f);
+			Assert.AreEqual(-10f, received.Tilt.Roll, 0.001f);
+		}
+
+		[Test]
+		public void ShakeInput_RoutesCorrectly()
+		{
+			InputMessage received = null;
+			Platform.OnPlayerInput += (_, input) => received = input;
+
+			_input.SimulateJoin("player1", new PlayerMetadata());
+			_input.SimulateInput("player1", new InputMessage
+			{
+				PlayerId = "player1",
+				ControlType = ControlType.Shake,
+				Shake = new ShakeData { Intensity = 0.9f, Triggered = true }
+			});
+
+			Assert.AreEqual(ControlType.Shake, received.ControlType);
+			Assert.AreEqual(0.9f, received.Shake.Intensity, 0.001f);
+			Assert.IsTrue(received.Shake.Triggered);
+		}
+
+		[Test]
+		public void MultiplePlayersInput_RoutesCorrectly()
+		{
+			_input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
+			_input.SimulateJoin("player2", new PlayerMetadata { DisplayName = "Bob" });
+
+			var received = new System.Collections.Generic.List<(string playerId, ControlType type)>();
+			Platform.OnPlayerInput += (session, msg) =>
+				received.Add((session.PlayerId, msg.ControlType));
+
+			_input.SimulateInput("player1", new InputMessage { ControlType = ControlType.Button });
+			_input.SimulateInput("player2", new InputMessage { ControlType = ControlType.Joystick });
+			_input.SimulateInput("player1", new InputMessage { ControlType = ControlType.Touch });
+
+			Assert.AreEqual(3, received.Count);
+			Assert.AreEqual("player1", received[0].playerId);
+			Assert.AreEqual(ControlType.Button, received[0].type);
+			Assert.AreEqual("player2", received[1].playerId);
+			Assert.AreEqual(ControlType.Joystick, received[1].type);
+			Assert.AreEqual("player1", received[2].playerId);
+			Assert.AreEqual(ControlType.Touch, received[2].type);
+		}
 	}
 }

@@ -36,7 +36,7 @@ namespace Nonatomic.CrowdGame
 		public Task ConnectAsync(CancellationToken ct = default)
 		{
 			IsConnected = true;
-			Debug.Log("[CrowdGame] Local input provider connected.");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Local input provider connected.");
 
 			if (_autoJoinOnStart)
 			{
@@ -82,7 +82,7 @@ namespace Nonatomic.CrowdGame
 			};
 
 			OnPlayerJoinRequested?.Invoke(binding.PlayerId, metadata);
-			Debug.Log($"[CrowdGame] Local player joined: {binding.DisplayName} ({binding.PlayerId})");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"Local player joined: {binding.DisplayName} ({binding.PlayerId})");
 		}
 
 		private void Update()

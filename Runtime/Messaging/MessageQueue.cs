@@ -77,7 +77,7 @@ namespace Nonatomic.CrowdGame.Messaging
 			if (_queue.Count >= _maxQueueSize)
 			{
 				_queue.Dequeue();
-				Debug.LogWarning("[CrowdGame] Message queue full, dropping oldest message.");
+				CrowdGameLogger.Warning(CrowdGameLogger.Category.Messaging, "Message queue full, dropping oldest message.");
 			}
 
 			_queue.Enqueue(message);

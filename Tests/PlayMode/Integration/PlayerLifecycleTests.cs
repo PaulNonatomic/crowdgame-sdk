@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
-using UnityEngine.TestTools;
 using Nonatomic.CrowdGame;
 
 namespace Nonatomic.CrowdGame.Tests.PlayMode
@@ -9,12 +7,15 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 	public class PlayerLifecycleTests
 	{
 		private PlatformService _service;
+		private TestInputProvider _input;
 
 		[SetUp]
 		public void SetUp()
 		{
 			_service = new PlatformService();
+			_input = new TestInputProvider();
 			_service.Initialise(null);
+			_service.RegisterInputProvider(_input);
 			Platform.Register(_service);
 		}
 
@@ -25,96 +26,101 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		}
 
 		[Test]
-		public void PlayerJoin_FiresOnPlayerJoined()
+		public void PlayerJoin_RaisesOnPlayerJoined()
 		{
-			IPlayerSession joinedSession = null;
-			Platform.OnPlayerJoined += session => joinedSession = session;
+			IPlayerSession joined = null;
+			Platform.OnPlayerJoined += session => joined = session;
 
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
+			_input.SimulateJoin("player-1", new PlayerMetadata { DisplayName = "Alice" });
 
-			Assert.IsNotNull(joinedSession);
-			Assert.AreEqual("player1", joinedSession.PlayerId);
+			Assert.IsNotNull(joined);
+			Assert.AreEqual("player-1", joined.PlayerId);
+			Assert.AreEqual("Alice", joined.Metadata.DisplayName);
+			Assert.IsTrue(joined.IsConnected);
 		}
 
 		[Test]
 		public void PlayerJoin_IncrementsPlayerCount()
 		{
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
+			_input.SimulateJoin("p1");
+			_input.SimulateJoin("p2");
+			_input.SimulateJoin("p3");
 
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(3, Platform.PlayerCount);
+			Assert.AreEqual(3, Platform.Players.Count);
 		}
 
 		[Test]
-		public void PlayerDisconnect_FiresOnPlayerDisconnected()
+		public void PlayerDisconnect_RaisesOnPlayerDisconnected()
 		{
-			IPlayerSession disconnectedSession = null;
-			Platform.OnPlayerDisconnected += session => disconnectedSession = session;
+			IPlayerSession disconnected = null;
+			Platform.OnPlayerDisconnected += session => disconnected = session;
 
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-			input.SimulateDisconnect("player1");
+			_input.SimulateJoin("p1");
+			_input.SimulateDisconnect("p1");
 
-			Assert.IsNotNull(disconnectedSession);
-			Assert.AreEqual("player1", disconnectedSession.PlayerId);
+			Assert.IsNotNull(disconnected);
+			Assert.AreEqual("p1", disconnected.PlayerId);
 		}
 
 		[Test]
 		public void PlayerDisconnect_DecrementsPlayerCount()
 		{
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
+			_input.SimulateJoin("p1");
+			_input.SimulateJoin("p2");
+			_input.SimulateDisconnect("p1");
 
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-			input.SimulateDisconnect("player1");
-
-			Assert.AreEqual(0, Platform.PlayerCount);
+			Assert.AreEqual(1, Platform.PlayerCount);
 		}
 
 		[Test]
-		public void PlayerReconnect_FiresOnPlayerJoined()
+		public void PlayerReconnect_RaisesOnPlayerJoined()
 		{
-			var joinCount = 0;
-			Platform.OnPlayerJoined += _ => joinCount++;
+			IPlayerSession reconnected = null;
 
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-			input.SimulateDisconnect("player1");
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
+			_input.SimulateJoin("p1", new PlayerMetadata { DisplayName = "Alice" });
+			_input.SimulateDisconnect("p1");
 
-			// Should fire OnPlayerJoined twice (initial join + reconnect via RaisePlayerJoined)
-			Assert.AreEqual(2, joinCount);
+			Platform.OnPlayerJoined += session => reconnected = session;
+			_input.SimulateJoin("p1");
+
+			Assert.IsNotNull(reconnected);
+			Assert.AreEqual("p1", reconnected.PlayerId);
+			Assert.IsTrue(reconnected.IsConnected);
+		}
+
+		[Test]
+		public void PlayerReconnect_RestoresPlayerCount()
+		{
+			_input.SimulateJoin("p1");
+			Assert.AreEqual(1, Platform.PlayerCount);
+
+			_input.SimulateDisconnect("p1");
+			Assert.AreEqual(0, Platform.PlayerCount);
+
+			_input.SimulateJoin("p1");
+			Assert.AreEqual(1, Platform.PlayerCount);
 		}
 
 		[Test]
 		public void MaxPlayerCap_RejectsExcessPlayers()
 		{
-			_service.PlayerManager.MaxPlayers = 2;
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
+			_service.PlayerManager.MaxPlayers = 3;
 
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-			input.SimulateJoin("player2", new PlayerMetadata { DisplayName = "Bob" });
-			input.SimulateJoin("player3", new PlayerMetadata { DisplayName = "Charlie" });
+			_input.SimulateJoin("p1");
+			_input.SimulateJoin("p2");
+			_input.SimulateJoin("p3");
+			_input.SimulateJoin("p4");
 
-			Assert.AreEqual(2, Platform.PlayerCount);
+			Assert.AreEqual(3, Platform.PlayerCount);
 		}
 
 		[Test]
-		public void ConcurrentPlayerJoins_AllTracked()
+		public void ConcurrentPlayerJoins_AllRegistered()
 		{
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
-
-			for (int i = 0; i < 10; i++)
+			for (var i = 0; i < 10; i++)
 			{
-				input.SimulateJoin($"player{i}", new PlayerMetadata { DisplayName = $"Player{i}" });
+				_input.SimulateJoin($"player-{i}");
 			}
 
 			Assert.AreEqual(10, Platform.PlayerCount);
@@ -122,34 +128,72 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		}
 
 		[Test]
-		public void Players_ContainsJoinedSessions()
+		public void ConcurrentPlayerJoins_AllHaveCorrectIds()
 		{
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
+			var joinedIds = new List<string>();
+			Platform.OnPlayerJoined += session => joinedIds.Add(session.PlayerId);
 
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
-			input.SimulateJoin("player2", new PlayerMetadata { DisplayName = "Bob" });
-
-			var ids = new List<string>();
-			foreach (var player in Platform.Players)
+			for (var i = 0; i < 10; i++)
 			{
-				ids.Add(player.PlayerId);
+				_input.SimulateJoin($"player-{i}");
 			}
 
-			Assert.Contains("player1", ids);
-			Assert.Contains("player2", ids);
+			Assert.AreEqual(10, joinedIds.Count);
+			for (var i = 0; i < 10; i++)
+			{
+				Assert.Contains($"player-{i}", joinedIds);
+			}
+		}
+
+		[Test]
+		public void DuplicatePlayerId_DoesNotAddTwice()
+		{
+			_input.SimulateJoin("p1");
+			_input.SimulateJoin("p1");
+
+			Assert.AreEqual(1, Platform.PlayerCount);
+		}
+
+		[Test]
+		public void PlayerJoin_SessionHasJoinTimestamp()
+		{
+			_input.SimulateJoin("p1");
+
+			var session = Platform.Players[0];
+			Assert.AreEqual("p1", session.PlayerId);
+			Assert.Greater(session.JoinedAt.Ticks, 0);
 		}
 
 		[Test]
 		public void Shutdown_ClearsAllPlayers()
 		{
-			var input = new TestInputProvider();
-			_service.RegisterInputProvider(input);
-			input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
+			_input.SimulateJoin("p1");
+			_input.SimulateJoin("p2");
+			_input.SimulateJoin("p3");
 
 			Platform.Shutdown();
 
 			Assert.AreEqual(0, Platform.PlayerCount);
+		}
+
+		private class TestInputProvider : IInputProvider
+		{
+			public event System.Action<string, InputMessage> OnInputReceived;
+			public event System.Action<string, PlayerMetadata> OnPlayerJoinRequested;
+			public event System.Action<string> OnPlayerDisconnected;
+			public bool IsConnected => true;
+
+			public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken ct = default)
+				=> System.Threading.Tasks.Task.CompletedTask;
+
+			public System.Threading.Tasks.Task DisconnectAsync()
+				=> System.Threading.Tasks.Task.CompletedTask;
+
+			public void SimulateJoin(string playerId, PlayerMetadata metadata = null)
+				=> OnPlayerJoinRequested?.Invoke(playerId, metadata ?? new PlayerMetadata { DisplayName = playerId });
+
+			public void SimulateDisconnect(string playerId)
+				=> OnPlayerDisconnected?.Invoke(playerId);
 		}
 	}
 }

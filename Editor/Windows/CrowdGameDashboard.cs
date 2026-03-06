@@ -101,6 +101,39 @@ namespace Nonatomic.CrowdGame.Editor
 			_playerCountLabel.text = $"Players: {Platform.PlayerCount}";
 
 			RefreshPlayerList();
+			RefreshStreamingInfo();
+		}
+
+		private void RefreshStreamingInfo()
+		{
+			if (!Platform.IsInitialised)
+			{
+				_streamStateLabel.text = "Stream: N/A";
+				_diagnosticsLabel.text = "Diagnostics: N/A";
+				return;
+			}
+
+			var streaming = Platform.StreamingService;
+			if (streaming == null)
+			{
+				_streamStateLabel.text = "Stream: No service";
+				_diagnosticsLabel.text = "Diagnostics: N/A";
+				return;
+			}
+
+			_streamStateLabel.text = $"Stream: {streaming.State}";
+
+			var diag = streaming.Diagnostics;
+			if (streaming.State == StreamState.Streaming && diag != null)
+			{
+				_diagnosticsLabel.text = $"{diag.Width}x{diag.Height} @ {diag.Fps:F0}fps | " +
+					$"{diag.Bitrate / 1_000_000f:F1} Mbps | {diag.Latency:F0}ms | " +
+					$"{diag.EncoderType ?? "N/A"}";
+			}
+			else
+			{
+				_diagnosticsLabel.text = "Diagnostics: Waiting for stream...";
+			}
 		}
 
 		private void RefreshPlayerList()
@@ -141,7 +174,7 @@ namespace Nonatomic.CrowdGame.Editor
 			AssetDatabase.SaveAssets();
 			Selection.activeObject = config;
 			EditorGUIUtility.PingObject(config);
-			Debug.Log($"[CrowdGame] Created PlatformConfig at {path}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Created PlatformConfig at {path}");
 		}
 
 		private void RunValidation()

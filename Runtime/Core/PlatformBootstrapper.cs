@@ -57,11 +57,11 @@ namespace Nonatomic.CrowdGame
 			var config = Resources.FindObjectsOfTypeAll<PlatformConfig>();
 			if (config.Length > 0)
 			{
-				Debug.Log("[CrowdGame] Auto-discovered PlatformConfig asset.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Auto-discovered PlatformConfig asset.");
 				return config[0];
 			}
 
-			Debug.LogWarning("[CrowdGame] No PlatformConfig asset found. Create one via Assets > Create > CrowdGame > Platform Config.");
+			CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "No PlatformConfig asset found. Create one via Assets > Create > CrowdGame > Platform Config.");
 			return null;
 		}
 	}

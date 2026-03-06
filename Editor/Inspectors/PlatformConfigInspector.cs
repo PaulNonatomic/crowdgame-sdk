@@ -68,11 +68,11 @@ namespace Nonatomic.CrowdGame.Editor
 				{
 					if (result.Passed)
 					{
-						Debug.Log($"[Validation] PASS: {result.RuleName}");
+						CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Validation PASS: {result.RuleName}");
 					}
 					else
 					{
-						Debug.LogWarning($"[Validation] FAIL: {result.RuleName} - {result.Message}");
+						CrowdGameLogger.Warning(CrowdGameLogger.Category.Editor, $"Validation FAIL: {result.RuleName} - {result.Message}");
 					}
 				}
 			}

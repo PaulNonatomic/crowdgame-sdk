@@ -33,7 +33,7 @@ namespace Nonatomic.CrowdGame.Editor
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 
-			Debug.Log("[CrowdGame] Setup complete! Drag 'CrowdGame Platform' prefab into your scene to get started.");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, "Setup complete! Drag 'CrowdGame Platform' prefab into your scene to get started.");
 		}
 
 		private static PlatformConfig CreateConfigAsset()
@@ -42,13 +42,13 @@ namespace Nonatomic.CrowdGame.Editor
 			var existing = AssetDatabase.LoadAssetAtPath<PlatformConfig>(path);
 			if (existing != null)
 			{
-				Debug.Log("[CrowdGame] PlatformConfig already exists, skipping.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, "PlatformConfig already exists, skipping.");
 				return existing;
 			}
 
 			var config = ScriptableObject.CreateInstance<PlatformConfig>();
 			AssetDatabase.CreateAsset(config, path);
-			Debug.Log($"[CrowdGame] Created PlatformConfig at {path}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Created PlatformConfig at {path}");
 			return config;
 		}
 
@@ -57,7 +57,7 @@ namespace Nonatomic.CrowdGame.Editor
 			var path = "Assets/CrowdGame/CrowdGame Platform.prefab";
 			if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
 			{
-				Debug.Log("[CrowdGame] Platform prefab already exists, skipping.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, "Platform prefab already exists, skipping.");
 				return;
 			}
 
@@ -74,7 +74,7 @@ namespace Nonatomic.CrowdGame.Editor
 
 			PrefabUtility.SaveAsPrefabAsset(go, path);
 			Object.DestroyImmediate(go);
-			Debug.Log($"[CrowdGame] Created Platform prefab at {path}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Created Platform prefab at {path}");
 		}
 
 		private static void CreateDiagnosticsPrefab()
@@ -82,7 +82,7 @@ namespace Nonatomic.CrowdGame.Editor
 			var path = "Assets/CrowdGame/CrowdGame Diagnostics.prefab";
 			if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
 			{
-				Debug.Log("[CrowdGame] Diagnostics prefab already exists, skipping.");
+				CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, "Diagnostics prefab already exists, skipping.");
 				return;
 			}
 
@@ -91,7 +91,7 @@ namespace Nonatomic.CrowdGame.Editor
 
 			PrefabUtility.SaveAsPrefabAsset(go, path);
 			Object.DestroyImmediate(go);
-			Debug.Log($"[CrowdGame] Created Diagnostics prefab at {path}");
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Editor, $"Created Diagnostics prefab at {path}");
 		}
 
 		private static void EnsureDirectory(string path)
