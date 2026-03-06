@@ -27,8 +27,5 @@
 .DS_Store
 Thumbs.db
 
-# Unity meta files for Samples~ are not needed
-Samples~/**/*.meta
-
 # MCP config (contains API keys)
 .mcp.json
