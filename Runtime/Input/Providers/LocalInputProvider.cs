@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using Key = UnityEngine.InputSystem.Key;
 
 namespace Nonatomic.CrowdGame
 {
@@ -24,27 +26,35 @@ namespace Nonatomic.CrowdGame
 		[SerializeField] private bool _autoJoinOnStart = true;
 
 		private readonly HashSet<string> _activeLocalPlayers = new HashSet<string>();
+		private readonly HashSet<string> _playersWithActiveJoystick = new HashSet<string>();
+		private bool _pendingAutoJoin;
 
 		private void Awake()
 		{
 #if UNITY_EDITOR
+			EnsureDefaultBindings();
+#endif
+		}
+
+		private void EnsureDefaultBindings()
+		{
 			if (_playerBindings.Count == 0)
 			{
 				_playerBindings.Add(LocalPlayerBinding.DefaultWASD());
 				_playerBindings.Add(LocalPlayerBinding.DefaultArrows());
 			}
-#endif
 		}
 
 		public Task ConnectAsync(CancellationToken ct = default)
 		{
 #if UNITY_EDITOR
+			EnsureDefaultBindings();
 			IsConnected = true;
 			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Local input provider connected.");
 
 			if (_autoJoinOnStart)
 			{
-				JoinLocalPlayer(_playerBindings[0]);
+				_pendingAutoJoin = true;
 			}
 #endif
 			return Task.CompletedTask;
@@ -63,9 +73,23 @@ namespace Nonatomic.CrowdGame
 		}
 
 		/// <summary>
-		/// Manually join a local simulated player.
+		/// Manually join the next available local simulated player.
 		/// </summary>
-		public void JoinLocalPlayer(int bindingIndex = 0)
+		[ContextMenu("Join Local Player")]
+		public void JoinLocalPlayer()
+		{
+			foreach (var binding in _playerBindings)
+			{
+				if (_activeLocalPlayers.Contains(binding.PlayerId)) continue;
+				JoinLocalPlayer(binding);
+				return;
+			}
+		}
+
+		/// <summary>
+		/// Manually join a local simulated player by binding index.
+		/// </summary>
+		public void JoinLocalPlayer(int bindingIndex)
 		{
 			if (bindingIndex >= 0 && bindingIndex < _playerBindings.Count)
 			{
@@ -94,29 +118,49 @@ namespace Nonatomic.CrowdGame
 #if UNITY_EDITOR
 			if (!IsConnected) return;
 
+			if (_pendingAutoJoin)
+			{
+				_pendingAutoJoin = false;
+				JoinLocalPlayer(_playerBindings[0]);
+			}
+
+			var keyboard = Keyboard.current;
+			if (keyboard == null) return;
+
 			foreach (var binding in _playerBindings)
 			{
 				if (!_activeLocalPlayers.Contains(binding.PlayerId)) continue;
 
-				ProcessJoystickInput(binding);
-				ProcessButtonInput(binding);
-				ProcessSelectionInput(binding);
+				ProcessJoystickInput(keyboard, binding);
+				ProcessButtonInput(keyboard, binding);
+				ProcessSelectionInput(keyboard, binding);
 			}
 #endif
 		}
 
-		private void ProcessJoystickInput(LocalPlayerBinding binding)
+		private void ProcessJoystickInput(Keyboard keyboard, LocalPlayerBinding binding)
 		{
 			var x = 0f;
 			var y = 0f;
 
-			if (Input.GetKey(binding.MoveLeft)) x -= 1f;
-			if (Input.GetKey(binding.MoveRight)) x += 1f;
-			if (Input.GetKey(binding.MoveDown)) y -= 1f;
-			if (Input.GetKey(binding.MoveUp)) y += 1f;
+			if (Application.isFocused)
+			{
+				if (keyboard[binding.MoveLeft].isPressed) x -= 1f;
+				if (keyboard[binding.MoveRight].isPressed) x += 1f;
+				if (keyboard[binding.MoveDown].isPressed) y -= 1f;
+				if (keyboard[binding.MoveUp].isPressed) y += 1f;
+			}
 
 			var magnitude = Mathf.Clamp01(new Vector2(x, y).magnitude);
-			if (magnitude < 0.01f) return;
+			var hasInput = magnitude > 0.01f;
+			var hadInput = _playersWithActiveJoystick.Contains(binding.PlayerId);
+
+			if (!hasInput && !hadInput) return;
+
+			if (hasInput)
+				_playersWithActiveJoystick.Add(binding.PlayerId);
+			else
+				_playersWithActiveJoystick.Remove(binding.PlayerId);
 
 			var message = new InputMessage
 			{
@@ -136,9 +180,9 @@ namespace Nonatomic.CrowdGame
 			OnInputReceived?.Invoke(binding.PlayerId, message);
 		}
 
-		private void ProcessButtonInput(LocalPlayerBinding binding)
+		private void ProcessButtonInput(Keyboard keyboard, LocalPlayerBinding binding)
 		{
-			if (!Input.GetKeyDown(binding.ActionButton)) return;
+			if (!keyboard[binding.ActionButton].wasPressedThisFrame) return;
 
 			var message = new InputMessage
 			{
@@ -156,9 +200,9 @@ namespace Nonatomic.CrowdGame
 			OnInputReceived?.Invoke(binding.PlayerId, message);
 		}
 
-		private void ProcessSelectionInput(LocalPlayerBinding binding)
+		private void ProcessSelectionInput(Keyboard keyboard, LocalPlayerBinding binding)
 		{
-			KeyCode[] selectionKeys =
+			Key[] selectionKeys =
 			{
 				binding.Selection1,
 				binding.Selection2,
@@ -168,7 +212,7 @@ namespace Nonatomic.CrowdGame
 
 			for (var i = 0; i < selectionKeys.Length; i++)
 			{
-				if (!Input.GetKeyDown(selectionKeys[i])) continue;
+				if (!keyboard[selectionKeys[i]].wasPressedThisFrame) continue;
 
 				var message = new InputMessage
 				{
@@ -197,15 +241,15 @@ namespace Nonatomic.CrowdGame
 	{
 		[field: SerializeField] public string PlayerId { get; set; } = "local-1";
 		[field: SerializeField] public string DisplayName { get; set; } = "Player 1";
-		[field: SerializeField] public KeyCode MoveUp { get; set; } = KeyCode.W;
-		[field: SerializeField] public KeyCode MoveDown { get; set; } = KeyCode.S;
-		[field: SerializeField] public KeyCode MoveLeft { get; set; } = KeyCode.A;
-		[field: SerializeField] public KeyCode MoveRight { get; set; } = KeyCode.D;
-		[field: SerializeField] public KeyCode ActionButton { get; set; } = KeyCode.Space;
-		[field: SerializeField] public KeyCode Selection1 { get; set; } = KeyCode.Alpha1;
-		[field: SerializeField] public KeyCode Selection2 { get; set; } = KeyCode.Alpha2;
-		[field: SerializeField] public KeyCode Selection3 { get; set; } = KeyCode.Alpha3;
-		[field: SerializeField] public KeyCode Selection4 { get; set; } = KeyCode.Alpha4;
+		[field: SerializeField] public Key MoveUp { get; set; } = Key.W;
+		[field: SerializeField] public Key MoveDown { get; set; } = Key.S;
+		[field: SerializeField] public Key MoveLeft { get; set; } = Key.A;
+		[field: SerializeField] public Key MoveRight { get; set; } = Key.D;
+		[field: SerializeField] public Key ActionButton { get; set; } = Key.Space;
+		[field: SerializeField] public Key Selection1 { get; set; } = Key.Digit1;
+		[field: SerializeField] public Key Selection2 { get; set; } = Key.Digit2;
+		[field: SerializeField] public Key Selection3 { get; set; } = Key.Digit3;
+		[field: SerializeField] public Key Selection4 { get; set; } = Key.Digit4;
 
 		public static LocalPlayerBinding DefaultWASD()
 		{
@@ -213,15 +257,15 @@ namespace Nonatomic.CrowdGame
 			{
 				PlayerId = "local-1",
 				DisplayName = "Player 1 (WASD)",
-				MoveUp = KeyCode.W,
-				MoveDown = KeyCode.S,
-				MoveLeft = KeyCode.A,
-				MoveRight = KeyCode.D,
-				ActionButton = KeyCode.Space,
-				Selection1 = KeyCode.Alpha1,
-				Selection2 = KeyCode.Alpha2,
-				Selection3 = KeyCode.Alpha3,
-				Selection4 = KeyCode.Alpha4
+				MoveUp = Key.W,
+				MoveDown = Key.S,
+				MoveLeft = Key.A,
+				MoveRight = Key.D,
+				ActionButton = Key.Space,
+				Selection1 = Key.Digit1,
+				Selection2 = Key.Digit2,
+				Selection3 = Key.Digit3,
+				Selection4 = Key.Digit4
 			};
 		}
 
@@ -231,15 +275,15 @@ namespace Nonatomic.CrowdGame
 			{
 				PlayerId = "local-2",
 				DisplayName = "Player 2 (Arrows)",
-				MoveUp = KeyCode.UpArrow,
-				MoveDown = KeyCode.DownArrow,
-				MoveLeft = KeyCode.LeftArrow,
-				MoveRight = KeyCode.RightArrow,
-				ActionButton = KeyCode.RightControl,
-				Selection1 = KeyCode.Alpha1,
-				Selection2 = KeyCode.Alpha2,
-				Selection3 = KeyCode.Alpha3,
-				Selection4 = KeyCode.Alpha4
+				MoveUp = Key.UpArrow,
+				MoveDown = Key.DownArrow,
+				MoveLeft = Key.LeftArrow,
+				MoveRight = Key.RightArrow,
+				ActionButton = Key.RightCtrl,
+				Selection1 = Key.Digit1,
+				Selection2 = Key.Digit2,
+				Selection3 = Key.Digit3,
+				Selection4 = Key.Digit4
 			};
 		}
 	}

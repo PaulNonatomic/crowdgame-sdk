@@ -57,7 +57,6 @@ namespace Nonatomic.CrowdGame
 			CrowdGameLogger.Info(CrowdGameLogger.Category.Lifecycle, $"Game state: {PreviousState} -> {CurrentState}");
 
 			OnStateChanged?.Invoke(PreviousState, CurrentState);
-			PlatformEvents.RaiseGameStateChanged(CurrentState);
 
 			RaiseLifecycleEvent(PreviousState, CurrentState);
 		}
@@ -68,7 +67,6 @@ namespace Nonatomic.CrowdGame
 		public void RaiseCountdownTick(int secondsRemaining)
 		{
 			OnCountdownTick?.Invoke(secondsRemaining);
-			LifecycleEvents.RaiseCountdownTick(secondsRemaining);
 		}
 
 		private void RaiseLifecycleEvent(GameState from, GameState to)
@@ -77,22 +75,18 @@ namespace Nonatomic.CrowdGame
 			{
 				case GameState.Playing when from == GameState.Countdown || from == GameState.WaitingForPlayers:
 					OnGameStart?.Invoke();
-					LifecycleEvents.RaiseGameStarted();
 					break;
 
 				case GameState.Playing when from == GameState.Paused:
 					OnGameResume?.Invoke();
-					LifecycleEvents.RaiseGameResumed();
 					break;
 
 				case GameState.Paused:
 					OnGamePause?.Invoke();
-					LifecycleEvents.RaiseGamePaused();
 					break;
 
 				case GameState.GameOver:
 					OnGameEnd?.Invoke();
-					LifecycleEvents.RaiseGameEnded();
 					break;
 			}
 		}

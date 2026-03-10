@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Concurrent;
-using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
+using Nonatomic.CrowdGame.Networking;
 
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
 	/// Receives player input from phone browsers over a WebSocket connection.
 	/// Dispatches all events on the Unity main thread via a receive queue.
+	/// Delegates connection management to WebSocketConnection.
 	/// </summary>
 	public class WebSocketInputProvider : IInputProvider, IDisposable
 	{
@@ -18,77 +17,25 @@ namespace Nonatomic.CrowdGame
 		public event Action<string, PlayerMetadata> OnPlayerJoinRequested;
 		public event Action<string> OnPlayerDisconnected;
 
-		public bool IsConnected => _socket?.State == WebSocketState.Open;
+		public bool IsConnected => _connection.IsConnected;
 
-		private readonly string _url;
-		private readonly ConcurrentQueue<Action> _mainThreadQueue = new ConcurrentQueue<Action>();
-
-		private ClientWebSocket _socket;
-		private CancellationTokenSource _cts;
-		private bool _disposed;
-		private bool _reconnectEnabled = true;
-
-		private const int ReceiveBufferSize = 8192;
-		private const int MaxReconnectDelayMs = 30000;
-		private const int InitialReconnectDelayMs = 1000;
+		private readonly WebSocketConnection _connection;
+		private readonly ConcurrentQueue<Action> _mainThreadQueue = new();
 
 		public WebSocketInputProvider(string url)
 		{
-			if (string.IsNullOrEmpty(url))
-			{
-				throw new ArgumentNullException(nameof(url));
-			}
-
-			_url = url;
+			_connection = new WebSocketConnection(url, CrowdGameLogger.Category.Input, sendEnabled: false);
+			_connection.OnMessageReceived += HandleRawMessage;
 		}
 
 		public async Task ConnectAsync(CancellationToken ct = default)
 		{
-			if (_disposed) throw new ObjectDisposedException(nameof(WebSocketInputProvider));
-			if (IsConnected) return;
-
-			_reconnectEnabled = true;
-
-			_cts?.Cancel();
-			_cts?.Dispose();
-			_cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			_socket?.Dispose();
-			_socket = new ClientWebSocket();
-
-			try
-			{
-				await _socket.ConnectAsync(new Uri(_url), _cts.Token);
-				CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"WebSocket connected to {_url}");
-
-				_ = RunReceiveLoop(_cts.Token);
-			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
-			{
-				CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Connection failed: {ex.Message}");
-				throw;
-			}
+			await _connection.ConnectAsync(ct);
 		}
 
 		public async Task DisconnectAsync()
 		{
-			_reconnectEnabled = false;
-
-			if (_socket?.State == WebSocketState.Open)
-			{
-				try
-				{
-					using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-					await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnecting", timeoutCts.Token);
-				}
-				catch (Exception ex)
-				{
-					CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Disconnect error: {ex.Message}");
-				}
-			}
-
-			_cts?.Cancel();
-			CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Disconnected");
+			await _connection.DisconnectAsync();
 		}
 
 		/// <summary>
@@ -111,74 +58,16 @@ namespace Nonatomic.CrowdGame
 
 		public void Dispose()
 		{
-			if (_disposed) return;
-			_disposed = true;
-			_reconnectEnabled = false;
-
-			_cts?.Cancel();
-			_cts?.Dispose();
-
-			if (_socket != null)
-			{
-				try { _socket.Dispose(); }
-				catch { /* Ignore disposal errors */ }
-			}
+			_connection.OnMessageReceived -= HandleRawMessage;
+			_connection.Dispose();
 		}
 
-		private async Task RunReceiveLoop(CancellationToken ct)
-		{
-			var buffer = new byte[ReceiveBufferSize];
-
-			try
-			{
-				while (!ct.IsCancellationRequested && _socket?.State == WebSocketState.Open)
-				{
-					var sb = new StringBuilder();
-					WebSocketReceiveResult result;
-
-					do
-					{
-						result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-
-						if (result.MessageType == WebSocketMessageType.Close)
-						{
-							CrowdGameLogger.Info(CrowdGameLogger.Category.Input, "Server closed connection");
-							HandleDisconnect(ct);
-							return;
-						}
-
-						sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-					}
-					while (!result.EndOfMessage);
-
-					if (result.MessageType == WebSocketMessageType.Text)
-					{
-						DispatchMessage(sb.ToString());
-					}
-				}
-			}
-			catch (OperationCanceledException)
-			{
-				// Normal cancellation
-			}
-			catch (WebSocketException ex)
-			{
-				CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Receive error: {ex.Message}");
-				HandleDisconnect(ct);
-			}
-			catch (Exception ex)
-			{
-				CrowdGameLogger.Error(CrowdGameLogger.Category.Input, $"Unexpected receive error: {ex}");
-				HandleDisconnect(ct);
-			}
-		}
-
-		private void DispatchMessage(string json)
+		private void HandleRawMessage(string json)
 		{
 			try
 			{
-				var type = ExtractJsonString(json, "type");
-				var playerId = ExtractJsonString(json, "playerId");
+				var type = JsonParser.ExtractString(json, "type");
+				var playerId = JsonParser.ExtractString(json, "playerId");
 
 				if (string.IsNullOrEmpty(type))
 				{
@@ -218,7 +107,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (string.IsNullOrEmpty(playerId)) return;
 
-			var inputJson = ExtractJsonValue(json, "input");
+			var inputJson = JsonParser.ExtractValue(json, "input");
 			if (string.IsNullOrEmpty(inputJson)) return;
 
 			var input = MessageSerializer.Deserialize<InputMessage>(inputJson);
@@ -233,7 +122,7 @@ namespace Nonatomic.CrowdGame
 		{
 			if (string.IsNullOrEmpty(playerId)) return;
 
-			var metadataJson = ExtractJsonValue(json, "metadata");
+			var metadataJson = JsonParser.ExtractValue(json, "metadata");
 			var metadata = !string.IsNullOrEmpty(metadataJson)
 				? MessageSerializer.Deserialize<PlayerMetadata>(metadataJson)
 				: new PlayerMetadata();
@@ -245,128 +134,6 @@ namespace Nonatomic.CrowdGame
 			}
 
 			_mainThreadQueue.Enqueue(() => OnPlayerJoinRequested?.Invoke(playerId, metadata));
-		}
-
-		private void HandleDisconnect(CancellationToken ct)
-		{
-			if (_reconnectEnabled && !ct.IsCancellationRequested)
-			{
-				_ = ReconnectWithBackoff(ct);
-			}
-		}
-
-		private async Task ReconnectWithBackoff(CancellationToken ct)
-		{
-			var delay = InitialReconnectDelayMs;
-
-			while (_reconnectEnabled && !ct.IsCancellationRequested)
-			{
-				CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"Reconnecting in {delay}ms...");
-
-				try
-				{
-					await Task.Delay(delay, ct);
-				}
-				catch (OperationCanceledException)
-				{
-					return;
-				}
-
-				try
-				{
-					_socket?.Dispose();
-					_socket = new ClientWebSocket();
-					await _socket.ConnectAsync(new Uri(_url), ct);
-
-					CrowdGameLogger.Info(CrowdGameLogger.Category.Input, $"Reconnected to {_url}");
-					_ = RunReceiveLoop(ct);
-					return;
-				}
-				catch (OperationCanceledException)
-				{
-					return;
-				}
-				catch (Exception ex)
-				{
-					CrowdGameLogger.Warning(CrowdGameLogger.Category.Input, $"Reconnect failed: {ex.Message}");
-					delay = Math.Min(delay * 2, MaxReconnectDelayMs);
-				}
-			}
-		}
-
-		private static string ExtractJsonString(string json, string key)
-		{
-			var search = $"\"{key}\":\"";
-			var start = json.IndexOf(search, StringComparison.Ordinal);
-			if (start < 0) return null;
-
-			start += search.Length;
-			var end = json.IndexOf('"', start);
-			if (end < 0) return null;
-
-			return json.Substring(start, end - start);
-		}
-
-		private static string ExtractJsonValue(string json, string key)
-		{
-			var search = $"\"{key}\":";
-			var start = json.IndexOf(search, StringComparison.Ordinal);
-			if (start < 0) return null;
-
-			start += search.Length;
-			while (start < json.Length && char.IsWhiteSpace(json[start])) start++;
-			if (start >= json.Length) return null;
-
-			var ch = json[start];
-
-			if (ch == '{' || ch == '[')
-			{
-				var open = ch;
-				var close = ch == '{' ? '}' : ']';
-				var depth = 1;
-				var pos = start + 1;
-				var inString = false;
-
-				while (pos < json.Length && depth > 0)
-				{
-					var c = json[pos];
-					if (inString)
-					{
-						if (c == '\\') { pos++; }
-						else if (c == '"') { inString = false; }
-					}
-					else
-					{
-						if (c == '"') { inString = true; }
-						else if (c == open) { depth++; }
-						else if (c == close) { depth--; }
-					}
-					pos++;
-				}
-
-				return json.Substring(start, pos - start);
-			}
-
-			if (ch == '"')
-			{
-				var end = start + 1;
-				while (end < json.Length)
-				{
-					if (json[end] == '\\') { end += 2; continue; }
-					if (json[end] == '"') break;
-					end++;
-				}
-				return json.Substring(start, end - start + 1);
-			}
-
-			{
-				var end = start;
-				while (end < json.Length && json[end] != ',' && json[end] != '}' && json[end] != ']' && !char.IsWhiteSpace(json[end]))
-				{
-					end++;
-				}
-				return json.Substring(start, end - start);
-			}
 		}
 	}
 }

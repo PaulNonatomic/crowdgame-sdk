@@ -11,26 +11,29 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[SetUp]
 		public void SetUp()
 		{
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
 			_service = new PlatformService();
-			_service.Initialise(null);
-			Platform.Register(_service);
-
 			_input = new TestInputProvider();
 			_service.RegisterInputProvider(_input);
+			_service.Initialise();
+			ServiceLocator.Register<IPlatform>(_service);
 		}
 
 		[TearDown]
 		public void TearDown()
 		{
-			Platform.Shutdown();
+			_service?.Dispose();
+			ServiceLocator.Clear();
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
 		}
 
 		[Test]
 		public void Input_FromJoinedPlayer_FiresOnPlayerInput()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage receivedInput = null;
 			IPlayerSession receivedSession = null;
-			Platform.OnPlayerInput += (session, input) =>
+			platform.OnPlayerInput += (session, input) =>
 			{
 				receivedSession = session;
 				receivedInput = input;
@@ -53,8 +56,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void Input_FromUnknownPlayer_IsDropped()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage receivedInput = null;
-			Platform.OnPlayerInput += (_, input) => receivedInput = input;
+			platform.OnPlayerInput += (_, input) => receivedInput = input;
 
 			// Send input without joining first
 			_input.SimulateInput("unknown_player", new InputMessage
@@ -70,11 +74,13 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void Input_RoutesToCorrectPlayer()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
 			_input.SimulateJoin("player2", new PlayerMetadata { DisplayName = "Bob" });
 
 			string receivedPlayerId = null;
-			Platform.OnPlayerInput += (session, _) => receivedPlayerId = session.PlayerId;
+			platform.OnPlayerInput += (session, _) => receivedPlayerId = session.PlayerId;
 
 			_input.SimulateInput("player2", new InputMessage
 			{
@@ -89,8 +95,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void JoystickInput_DeserializesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -108,8 +115,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void SelectionInput_DeserializesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -127,8 +135,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void SwipeInput_DeserializesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -145,8 +154,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void DPadInput_DeserializesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -163,8 +173,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void Input_AfterPlayerDisconnect_IsDropped()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateDisconnect("player1");
@@ -181,8 +192,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void TouchInput_RoutesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -200,8 +212,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void TextInput_RoutesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -219,8 +232,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void TiltInput_RoutesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -238,8 +252,9 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void ShakeInput_RoutesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			InputMessage received = null;
-			Platform.OnPlayerInput += (_, input) => received = input;
+			platform.OnPlayerInput += (_, input) => received = input;
 
 			_input.SimulateJoin("player1", new PlayerMetadata());
 			_input.SimulateInput("player1", new InputMessage
@@ -257,11 +272,13 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void MultiplePlayersInput_RoutesCorrectly()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("player1", new PlayerMetadata { DisplayName = "Alice" });
 			_input.SimulateJoin("player2", new PlayerMetadata { DisplayName = "Bob" });
 
 			var received = new System.Collections.Generic.List<(string playerId, ControlType type)>();
-			Platform.OnPlayerInput += (session, msg) =>
+			platform.OnPlayerInput += (session, msg) =>
 				received.Add((session.PlayerId, msg.ControlType));
 
 			_input.SimulateInput("player1", new InputMessage { ControlType = ControlType.Button });
@@ -275,6 +292,29 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 			Assert.AreEqual(ControlType.Joystick, received[1].type);
 			Assert.AreEqual("player1", received[2].playerId);
 			Assert.AreEqual(ControlType.Touch, received[2].type);
+		}
+
+		private class TestInputProvider : IInputProvider
+		{
+			public event System.Action<string, InputMessage> OnInputReceived;
+			public event System.Action<string, PlayerMetadata> OnPlayerJoinRequested;
+			public event System.Action<string> OnPlayerDisconnected;
+			public bool IsConnected => true;
+
+			public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken ct = default)
+				=> System.Threading.Tasks.Task.CompletedTask;
+
+			public System.Threading.Tasks.Task DisconnectAsync()
+				=> System.Threading.Tasks.Task.CompletedTask;
+
+			public void SimulateJoin(string playerId, PlayerMetadata metadata = null)
+				=> OnPlayerJoinRequested?.Invoke(playerId, metadata ?? new PlayerMetadata { DisplayName = playerId });
+
+			public void SimulateInput(string playerId, InputMessage input)
+				=> OnInputReceived?.Invoke(playerId, input);
+
+			public void SimulateDisconnect(string playerId)
+				=> OnPlayerDisconnected?.Invoke(playerId);
 		}
 	}
 }

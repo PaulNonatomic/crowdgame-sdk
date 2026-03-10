@@ -7,7 +7,7 @@ Shader "CrowdGame/AlphaReconstruct"
 
     SubShader
     {
-        Tags { "RenderPipeline" = "UniversalPipeline" "RenderType" = "Transparent" "Queue" = "Transparent" }
+        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" }
 
         // Reconstructs RGBA from a double-height alpha-stacked frame.
         // Top half contains RGB, bottom half contains alpha as grayscale.
@@ -20,31 +20,30 @@ Shader "CrowdGame/AlphaReconstruct"
             ZWrite Off
             Cull Off
 
-            HLSLPROGRAM
+            CGPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "UnityCG.cginc"
 
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
+            sampler2D _MainTex;
 
             struct Attributes
             {
-                float4 positionOS : POSITION;
+                float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             struct Varyings
             {
-                float4 positionCS : SV_POSITION;
+                float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.pos = UnityObjectToClipPos(input.vertex);
                 output.uv = input.uv;
                 return output;
             }
@@ -53,15 +52,15 @@ Shader "CrowdGame/AlphaReconstruct"
             {
                 // Sample RGB from top half (y: 0..0.5)
                 float2 rgbUV = float2(input.uv.x, input.uv.y * 0.5);
-                half4 rgb = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, rgbUV);
+                half4 rgb = tex2D(_MainTex, rgbUV);
 
                 // Sample alpha from bottom half (y: 0.5..1.0)
                 float2 alphaUV = float2(input.uv.x, input.uv.y * 0.5 + 0.5);
-                half4 alpha = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, alphaUV);
+                half4 alpha = tex2D(_MainTex, alphaUV);
 
                 return half4(rgb.rgb, alpha.r);
             }
-            ENDHLSL
+            ENDCG
         }
     }
 

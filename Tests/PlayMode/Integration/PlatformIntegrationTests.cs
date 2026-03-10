@@ -11,78 +11,94 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 {
 	public class PlatformIntegrationTests
 	{
+		private PlatformService _service;
+
+		[SetUp]
+		public void SetUp()
+		{
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
+			_service = new PlatformService();
+			_service.RegisterLifecycle(new GameLifecycleManager());
+			_service.Initialise();
+			ServiceLocator.Register<IPlatform>(_service);
+		}
+
 		[TearDown]
 		public void TearDown()
 		{
-			Platform.Shutdown();
+			_service?.Dispose();
+			ServiceLocator.Clear();
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
 		}
 
 		[Test]
 		public void Initialise_WiresAllSubsystems()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
-			Assert.IsNotNull(Platform.Instance);
-			Assert.IsNotNull(Platform.Instance.Lifecycle);
-			Assert.IsNotNull(Platform.Instance.MessageTransport);
+			Assert.IsNotNull(platform);
+			Assert.IsNotNull(platform.Lifecycle);
+			Assert.IsNotNull(platform.MessageTransport);
 		}
 
 		[Test]
 		public void Initialise_LifecycleStartsAtNone()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
-			Assert.AreEqual(GameState.None, Platform.CurrentState);
+			Assert.AreEqual(GameState.None, platform.CurrentState);
 		}
 
 		[Test]
 		public void Shutdown_ClearsAllSubsystems()
 		{
-			Platform.Initialise();
-			Platform.Shutdown();
+			_service.Dispose();
+			ServiceLocator.Unregister<IPlatform>();
 
-			Assert.IsNull(Platform.Instance);
-			Assert.IsFalse(Platform.IsInitialised);
-			Assert.AreEqual(0, Platform.PlayerCount);
+			Assert.IsFalse(ServiceLocator.IsRegistered<IPlatform>());
 		}
 
 		[Test]
 		public void MultipleInitShutdownCycles_DoNotLeak()
 		{
+			// First cycle already set up by SetUp
+			_service.Dispose();
+			ServiceLocator.Clear();
+
 			for (var i = 0; i < 5; i++)
 			{
-				Platform.Initialise();
-				Assert.IsTrue(Platform.IsInitialised);
+				var service = new PlatformService();
+				service.Initialise();
+				ServiceLocator.Register<IPlatform>(service);
+				Assert.IsTrue(ServiceLocator.IsRegistered<IPlatform>());
 
-				Platform.Shutdown();
-				Assert.IsFalse(Platform.IsInitialised);
+				service.Dispose();
+				ServiceLocator.Clear();
+				Assert.IsFalse(ServiceLocator.IsRegistered<IPlatform>());
 			}
-
-			Assert.IsNull(Platform.Instance);
-			Assert.AreEqual(0, Platform.PlayerCount);
 		}
 
 		[Test]
 		public void SetGameState_TransitionsLifecycle()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
-			Platform.SetGameState(GameState.WaitingForPlayers);
-			Assert.AreEqual(GameState.WaitingForPlayers, Platform.CurrentState);
+			platform.SetGameState(GameState.WaitingForPlayers);
+			Assert.AreEqual(GameState.WaitingForPlayers, platform.CurrentState);
 
-			Platform.SetGameState(GameState.Playing);
-			Assert.AreEqual(GameState.Playing, Platform.CurrentState);
+			platform.SetGameState(GameState.Playing);
+			Assert.AreEqual(GameState.Playing, platform.CurrentState);
 		}
 
 		[Test]
-		public void SetGameState_RaisesPlatformEvent()
+		public void SetGameState_RaisesEvent()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
 			GameState? received = null;
-			Platform.OnGameStateChanged += state => received = state;
+			platform.OnGameStateChanged += state => received = state;
 
-			Platform.SetGameState(GameState.WaitingForPlayers);
+			platform.SetGameState(GameState.WaitingForPlayers);
 
 			Assert.AreEqual(GameState.WaitingForPlayers, received);
 		}
@@ -90,25 +106,23 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void SetControllerLayout_DoesNotThrow()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
 			var layout = ControllerLayoutBuilder.Create("Test")
 				.AddButton("btn", "Fire")
 				.Build();
 
-			Assert.DoesNotThrow(() => Platform.SetControllerLayout(layout));
+			Assert.DoesNotThrow(() => platform.SetControllerLayout(layout));
 		}
 
 		[Test]
 		public void SendToPlayer_WithMockTransport_RoutesMessage()
 		{
-			var service = new PlatformService();
 			var transport = new TestMessageTransport();
-			service.Initialise(null);
-			service.RegisterMessageTransport(transport);
-			Platform.Register(service);
+			_service.RegisterMessageTransport(transport);
 
-			Platform.SendToPlayer("player-1", new { type = "welcome" });
+			var platform = ServiceLocator.Get<IPlatform>();
+			platform.SendToPlayer("player-1", new { type = "welcome" });
 
 			Assert.AreEqual(1, transport.SentToPlayer.Count);
 			Assert.AreEqual("player-1", transport.SentToPlayer[0].playerId);
@@ -117,13 +131,11 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void SendToAllPlayers_WithMockTransport_RoutesMessage()
 		{
-			var service = new PlatformService();
 			var transport = new TestMessageTransport();
-			service.Initialise(null);
-			service.RegisterMessageTransport(transport);
-			Platform.Register(service);
+			_service.RegisterMessageTransport(transport);
 
-			Platform.SendToAllPlayers(new { type = "gameStart" });
+			var platform = ServiceLocator.Get<IPlatform>();
+			platform.SendToAllPlayers(new { type = "gameStart" });
 
 			Assert.AreEqual(1, transport.SentToAll.Count);
 		}
@@ -131,36 +143,34 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void RegisterInputProvider_WiresPlayerJoinEvents()
 		{
-			var service = new PlatformService();
 			var input = new TestInputProvider();
-			service.Initialise(null);
-			service.RegisterInputProvider(input);
-			Platform.Register(service);
+			_service.RegisterInputProvider(input);
 
+			var platform = ServiceLocator.Get<IPlatform>();
 			IPlayerSession joined = null;
-			Platform.OnPlayerJoined += session => joined = session;
+			platform.OnPlayerJoined += session => joined = session;
 
 			input.SimulateJoin("p1");
 
 			Assert.IsNotNull(joined);
 			Assert.AreEqual("p1", joined.PlayerId);
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(1, platform.PlayerCount);
 		}
 
 		[Test]
 		public void FullGameLoop_AllEventsFireCorrectly()
 		{
-			Platform.Initialise();
+			var platform = ServiceLocator.Get<IPlatform>();
 
 			var states = new List<GameState>();
-			Platform.OnGameStateChanged += state => states.Add(state);
+			platform.OnGameStateChanged += state => states.Add(state);
 
-			Platform.SetGameState(GameState.WaitingForPlayers);
-			Platform.SetGameState(GameState.Countdown);
-			Platform.SetGameState(GameState.Playing);
-			Platform.SetGameState(GameState.GameOver);
-			Platform.SetGameState(GameState.Results);
-			Platform.SetGameState(GameState.WaitingForPlayers);
+			platform.SetGameState(GameState.WaitingForPlayers);
+			platform.SetGameState(GameState.Countdown);
+			platform.SetGameState(GameState.Playing);
+			platform.SetGameState(GameState.GameOver);
+			platform.SetGameState(GameState.Results);
+			platform.SetGameState(GameState.WaitingForPlayers);
 
 			Assert.AreEqual(6, states.Count);
 			Assert.AreEqual(GameState.WaitingForPlayers, states[0]);
@@ -174,14 +184,20 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator PlatformBootstrapper_AutoInitialisesOnAwake()
 		{
+			// Clean up SetUp state so bootstrapper can register fresh
+			_service.Dispose();
+			ServiceLocator.Clear();
+
 			var go = new GameObject("TestPlatform");
 			var bootstrapper = go.AddComponent<PlatformBootstrapper>();
 
 			yield return null;
 
-			Assert.IsTrue(Platform.IsInitialised);
+			Assert.IsTrue(ServiceLocator.IsRegistered<IPlatform>());
 
 			Object.Destroy(go);
+
+			yield return null;
 		}
 
 		private class TestInputProvider : IInputProvider

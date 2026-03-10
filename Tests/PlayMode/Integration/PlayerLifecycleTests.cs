@@ -12,24 +12,28 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[SetUp]
 		public void SetUp()
 		{
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
 			_service = new PlatformService();
 			_input = new TestInputProvider();
-			_service.Initialise(null);
 			_service.RegisterInputProvider(_input);
-			Platform.Register(_service);
+			_service.Initialise();
+			ServiceLocator.Register<IPlatform>(_service);
 		}
 
 		[TearDown]
 		public void TearDown()
 		{
-			Platform.Shutdown();
+			_service?.Dispose();
+			ServiceLocator.Clear();
+			ServiceLocator.SetProvider(new DefaultServiceLocator());
 		}
 
 		[Test]
 		public void PlayerJoin_RaisesOnPlayerJoined()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			IPlayerSession joined = null;
-			Platform.OnPlayerJoined += session => joined = session;
+			platform.OnPlayerJoined += session => joined = session;
 
 			_input.SimulateJoin("player-1", new PlayerMetadata { DisplayName = "Alice" });
 
@@ -42,19 +46,22 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void PlayerJoin_IncrementsPlayerCount()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("p1");
 			_input.SimulateJoin("p2");
 			_input.SimulateJoin("p3");
 
-			Assert.AreEqual(3, Platform.PlayerCount);
-			Assert.AreEqual(3, Platform.Players.Count);
+			Assert.AreEqual(3, platform.PlayerCount);
+			Assert.AreEqual(3, platform.Players.Count);
 		}
 
 		[Test]
 		public void PlayerDisconnect_RaisesOnPlayerDisconnected()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			IPlayerSession disconnected = null;
-			Platform.OnPlayerDisconnected += session => disconnected = session;
+			platform.OnPlayerDisconnected += session => disconnected = session;
 
 			_input.SimulateJoin("p1");
 			_input.SimulateDisconnect("p1");
@@ -66,22 +73,25 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void PlayerDisconnect_DecrementsPlayerCount()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("p1");
 			_input.SimulateJoin("p2");
 			_input.SimulateDisconnect("p1");
 
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(1, platform.PlayerCount);
 		}
 
 		[Test]
-		public void PlayerReconnect_RaisesOnPlayerJoined()
+		public void PlayerReconnect_RaisesOnPlayerReconnected()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			IPlayerSession reconnected = null;
 
 			_input.SimulateJoin("p1", new PlayerMetadata { DisplayName = "Alice" });
 			_input.SimulateDisconnect("p1");
 
-			Platform.OnPlayerJoined += session => reconnected = session;
+			platform.OnPlayerReconnected += session => reconnected = session;
 			_input.SimulateJoin("p1");
 
 			Assert.IsNotNull(reconnected);
@@ -92,19 +102,22 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void PlayerReconnect_RestoresPlayerCount()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("p1");
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(1, platform.PlayerCount);
 
 			_input.SimulateDisconnect("p1");
-			Assert.AreEqual(0, Platform.PlayerCount);
+			Assert.AreEqual(0, platform.PlayerCount);
 
 			_input.SimulateJoin("p1");
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(1, platform.PlayerCount);
 		}
 
 		[Test]
 		public void MaxPlayerCap_RejectsExcessPlayers()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			_service.PlayerManager.MaxPlayers = 3;
 
 			_input.SimulateJoin("p1");
@@ -112,26 +125,29 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 			_input.SimulateJoin("p3");
 			_input.SimulateJoin("p4");
 
-			Assert.AreEqual(3, Platform.PlayerCount);
+			Assert.AreEqual(3, platform.PlayerCount);
 		}
 
 		[Test]
 		public void ConcurrentPlayerJoins_AllRegistered()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			for (var i = 0; i < 10; i++)
 			{
 				_input.SimulateJoin($"player-{i}");
 			}
 
-			Assert.AreEqual(10, Platform.PlayerCount);
-			Assert.AreEqual(10, Platform.Players.Count);
+			Assert.AreEqual(10, platform.PlayerCount);
+			Assert.AreEqual(10, platform.Players.Count);
 		}
 
 		[Test]
 		public void ConcurrentPlayerJoins_AllHaveCorrectIds()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
 			var joinedIds = new List<string>();
-			Platform.OnPlayerJoined += session => joinedIds.Add(session.PlayerId);
+			platform.OnPlayerJoined += session => joinedIds.Add(session.PlayerId);
 
 			for (var i = 0; i < 10; i++)
 			{
@@ -148,18 +164,22 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 		[Test]
 		public void DuplicatePlayerId_DoesNotAddTwice()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("p1");
 			_input.SimulateJoin("p1");
 
-			Assert.AreEqual(1, Platform.PlayerCount);
+			Assert.AreEqual(1, platform.PlayerCount);
 		}
 
 		[Test]
 		public void PlayerJoin_SessionHasJoinTimestamp()
 		{
+			var platform = ServiceLocator.Get<IPlatform>();
+
 			_input.SimulateJoin("p1");
 
-			var session = Platform.Players[0];
+			var session = platform.Players[0];
 			Assert.AreEqual("p1", session.PlayerId);
 			Assert.Greater(session.JoinedAt.Ticks, 0);
 		}
@@ -171,9 +191,10 @@ namespace Nonatomic.CrowdGame.Tests.PlayMode
 			_input.SimulateJoin("p2");
 			_input.SimulateJoin("p3");
 
-			Platform.Shutdown();
+			_service.Dispose();
+			ServiceLocator.Clear();
 
-			Assert.AreEqual(0, Platform.PlayerCount);
+			Assert.IsFalse(ServiceLocator.IsRegistered<IPlatform>());
 		}
 
 		private class TestInputProvider : IInputProvider

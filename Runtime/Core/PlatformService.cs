@@ -2,16 +2,28 @@ using System;
 using System.Collections.Generic;
 using Nonatomic.CrowdGame.Messaging;
 using Nonatomic.CrowdGame.Streaming;
-using UnityEngine;
 
 namespace Nonatomic.CrowdGame
 {
 	/// <summary>
-	/// Default IPlatform implementation. Wires together all subsystems
-	/// and manages player sessions, input routing, and messaging.
+	/// Default IPlatform implementation. Coordinates player sessions,
+	/// input routing, messaging, and game lifecycle.
+	/// Subsystems are registered externally (e.g. by PlatformBootstrapper).
 	/// </summary>
 	public class PlatformService : IPlatform
 	{
+		public event Action<IPlayerSession> OnPlayerJoined;
+		public event Action<IPlayerSession> OnPlayerLeft;
+		public event Action<IPlayerSession> OnPlayerReconnected;
+		public event Action<IPlayerSession> OnPlayerDisconnected;
+		public event Action<IPlayerSession, InputMessage> OnPlayerInput;
+		public event Action<GameState> OnGameStateChanged;
+		public event Action OnGameStarted;
+		public event Action OnGameEnded;
+		public event Action OnGamePaused;
+		public event Action OnGameResumed;
+		public event Action<int> OnCountdownTick;
+
 		public int PlayerCount => _playerManager.PlayerCount;
 		public GameState CurrentState => _lifecycle?.CurrentState ?? GameState.None;
 		public IReadOnlyList<IPlayerSession> Players => _playerManager.Players;
@@ -23,27 +35,25 @@ namespace Nonatomic.CrowdGame
 		public IPlayerManager PlayerManager => _playerManager;
 
 		private readonly PlayerManager _playerManager = new PlayerManager();
-		private PlatformConfig _config;
 		private bool _initialised;
 		private IGameLifecycle _lifecycle;
 		private IControllerLayout _controllerLayout;
 
-		public void Initialise(PlatformConfig config)
+		public PlatformService()
+		{
+			_playerManager.OnPlayerJoined += HandlePlayerManagerJoined;
+			_playerManager.OnPlayerLeft += HandlePlayerManagerLeft;
+			_playerManager.OnPlayerReconnected += HandlePlayerManagerReconnected;
+			_playerManager.OnPlayerDisconnected += HandlePlayerManagerDisconnected;
+		}
+
+		public void Initialise()
 		{
 			if (_initialised)
 			{
 				CrowdGameLogger.Warning(CrowdGameLogger.Category.Core, "Platform already initialised.");
 				return;
 			}
-
-			_config = config;
-
-			if (config != null)
-			{
-				_playerManager.MaxPlayers = config.MaxPlayers;
-			}
-
-			AutoWireSubsystems(config);
 
 			_initialised = true;
 
@@ -55,7 +65,7 @@ namespace Nonatomic.CrowdGame
 			if (InputProvider != null)
 			{
 				InputProvider.OnPlayerJoinRequested -= HandlePlayerJoinRequested;
-				InputProvider.OnPlayerDisconnected -= HandlePlayerDisconnected;
+				InputProvider.OnPlayerDisconnected -= HandleInputPlayerDisconnected;
 				InputProvider.OnInputReceived -= HandleInputReceived;
 			}
 
@@ -64,7 +74,7 @@ namespace Nonatomic.CrowdGame
 			if (InputProvider != null)
 			{
 				InputProvider.OnPlayerJoinRequested += HandlePlayerJoinRequested;
-				InputProvider.OnPlayerDisconnected += HandlePlayerDisconnected;
+				InputProvider.OnPlayerDisconnected += HandleInputPlayerDisconnected;
 				InputProvider.OnInputReceived += HandleInputReceived;
 			}
 		}
@@ -84,6 +94,11 @@ namespace Nonatomic.CrowdGame
 			if (_lifecycle != null)
 			{
 				_lifecycle.OnStateChanged -= HandleGameStateChanged;
+				_lifecycle.OnGameStart -= HandleGameStart;
+				_lifecycle.OnGameEnd -= HandleGameEnd;
+				_lifecycle.OnGamePause -= HandleGamePause;
+				_lifecycle.OnGameResume -= HandleGameResume;
+				_lifecycle.OnCountdownTick -= HandleLifecycleCountdownTick;
 			}
 
 			Lifecycle = lifecycle;
@@ -92,12 +107,12 @@ namespace Nonatomic.CrowdGame
 			if (_lifecycle != null)
 			{
 				_lifecycle.OnStateChanged += HandleGameStateChanged;
+				_lifecycle.OnGameStart += HandleGameStart;
+				_lifecycle.OnGameEnd += HandleGameEnd;
+				_lifecycle.OnGamePause += HandleGamePause;
+				_lifecycle.OnGameResume += HandleGameResume;
+				_lifecycle.OnCountdownTick += HandleLifecycleCountdownTick;
 			}
-		}
-
-		public void RegisterPlayerManager(IPlayerManager playerManager)
-		{
-			// Allows replacing the default player manager
 		}
 
 		public void SendToPlayer(string playerId, object data)
@@ -144,10 +159,15 @@ namespace Nonatomic.CrowdGame
 
 		public void Dispose()
 		{
+			_playerManager.OnPlayerJoined -= HandlePlayerManagerJoined;
+			_playerManager.OnPlayerLeft -= HandlePlayerManagerLeft;
+			_playerManager.OnPlayerReconnected -= HandlePlayerManagerReconnected;
+			_playerManager.OnPlayerDisconnected -= HandlePlayerManagerDisconnected;
+
 			if (InputProvider != null)
 			{
 				InputProvider.OnPlayerJoinRequested -= HandlePlayerJoinRequested;
-				InputProvider.OnPlayerDisconnected -= HandlePlayerDisconnected;
+				InputProvider.OnPlayerDisconnected -= HandleInputPlayerDisconnected;
 				InputProvider.OnInputReceived -= HandleInputReceived;
 
 				if (InputProvider is IDisposable disposableInput)
@@ -159,6 +179,11 @@ namespace Nonatomic.CrowdGame
 			if (_lifecycle != null)
 			{
 				_lifecycle.OnStateChanged -= HandleGameStateChanged;
+				_lifecycle.OnGameStart -= HandleGameStart;
+				_lifecycle.OnGameEnd -= HandleGameEnd;
+				_lifecycle.OnGamePause -= HandleGamePause;
+				_lifecycle.OnGameResume -= HandleGameResume;
+				_lifecycle.OnCountdownTick -= HandleLifecycleCountdownTick;
 			}
 
 			if (MessageTransport is IDisposable disposableTransport)
@@ -168,61 +193,31 @@ namespace Nonatomic.CrowdGame
 
 			_playerManager.Clear();
 			_initialised = false;
+
+			OnPlayerJoined = null;
+			OnPlayerLeft = null;
+			OnPlayerReconnected = null;
+			OnPlayerDisconnected = null;
+			OnPlayerInput = null;
+			OnGameStateChanged = null;
+			OnGameStarted = null;
+			OnGameEnded = null;
+			OnGamePaused = null;
+			OnGameResumed = null;
+			OnCountdownTick = null;
 		}
 
-		private void AutoWireSubsystems(PlatformConfig config)
-		{
-			// Lifecycle — always wire
-			if (Lifecycle == null)
-			{
-				RegisterLifecycle(new GameLifecycleManager());
-			}
-
-			// Message transport
-			if (MessageTransport == null)
-			{
-				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
-				RegisterMessageTransport(new WebSocketMessageTransport(signalingUrl));
-			}
-
-			// Input provider — editor uses local keyboard, builds use WebSocket
-			if (InputProvider == null)
-			{
-#if UNITY_EDITOR
-				var localProvider = UnityEngine.Object.FindAnyObjectByType<LocalInputProvider>();
-				if (localProvider != null)
-				{
-					RegisterInputProvider(localProvider);
-					localProvider.ConnectAsync().FireAndForget();
-					CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Auto-wired LocalInputProvider from scene.");
-				}
-				else
-				{
-					CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Editor mode: add a LocalInputProvider to the scene for keyboard input.");
-				}
-#else
-				var signalingUrl = config?.SignalingUrl ?? "ws://localhost";
-				RegisterInputProvider(new WebSocketInputProvider(signalingUrl));
-#endif
-			}
-
-			// Streaming service
-			if (StreamingService == null)
-			{
-#if UNITY_EDITOR
-				// No streaming in editor — games test with local input only
-#else
-				RegisterStreamingService(new StreamingService());
-#endif
-			}
-		}
+		private void HandlePlayerManagerJoined(IPlayerSession session) => OnPlayerJoined?.Invoke(session);
+		private void HandlePlayerManagerLeft(IPlayerSession session) => OnPlayerLeft?.Invoke(session);
+		private void HandlePlayerManagerReconnected(IPlayerSession session) => OnPlayerReconnected?.Invoke(session);
+		private void HandlePlayerManagerDisconnected(IPlayerSession session) => OnPlayerDisconnected?.Invoke(session);
 
 		private void HandlePlayerJoinRequested(string playerId, PlayerMetadata metadata)
 		{
 			_playerManager.AddPlayer(playerId, metadata);
 		}
 
-		private void HandlePlayerDisconnected(string playerId)
+		private void HandleInputPlayerDisconnected(string playerId)
 		{
 			_playerManager.DisconnectPlayer(playerId);
 		}
@@ -232,13 +227,19 @@ namespace Nonatomic.CrowdGame
 			var session = _playerManager.GetPlayer(playerId);
 			if (session != null)
 			{
-				PlatformEvents.RaisePlayerInput(session, input);
+				OnPlayerInput?.Invoke(session, input);
 			}
 		}
 
 		private void HandleGameStateChanged(GameState previousState, GameState newState)
 		{
-			PlatformEvents.RaiseGameStateChanged(newState);
+			OnGameStateChanged?.Invoke(newState);
 		}
+
+		private void HandleGameStart() => OnGameStarted?.Invoke();
+		private void HandleGameEnd() => OnGameEnded?.Invoke();
+		private void HandleGamePause() => OnGamePaused?.Invoke();
+		private void HandleGameResume() => OnGameResumed?.Invoke();
+		private void HandleLifecycleCountdownTick(int seconds) => OnCountdownTick?.Invoke(seconds);
 	}
 }

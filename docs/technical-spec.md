@@ -342,7 +342,7 @@ namespace Nonatomic.CrowdGame
 		private void Awake()
 		{
 			if (!AutoInitialise) return;
-			Platform.Initialise(Config);
+			Platform.Initialise();
 		}
 	}
 }

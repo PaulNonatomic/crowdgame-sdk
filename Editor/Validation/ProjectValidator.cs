@@ -11,7 +11,6 @@ namespace Nonatomic.CrowdGame.Editor
 	{
 		private static readonly List<IValidationRule> Rules = new()
 		{
-			new Rules.RenderPipelineRule(),
 			new Rules.InputSystemRule(),
 			new Rules.BuildTargetRule(),
 			new Rules.GraphicsAPIRule(),

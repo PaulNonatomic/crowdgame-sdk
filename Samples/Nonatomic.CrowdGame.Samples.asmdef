@@ -1,0 +1,16 @@
+{
+	"name": "Nonatomic.CrowdGame.Samples",
+	"rootNamespace": "Nonatomic.CrowdGame.Samples",
+	"references": [
+		"Nonatomic.CrowdGame.Runtime"
+	],
+	"includePlatforms": [],
+	"excludePlatforms": [],
+	"allowUnsafeCode": false,
+	"overrideReferences": false,
+	"precompiledReferences": [],
+	"autoReferenced": true,
+	"defineConstraints": [],
+	"versionDefines": [],
+	"noEngineReferences": false
+}

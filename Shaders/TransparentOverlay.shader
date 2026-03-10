@@ -8,7 +8,7 @@ Shader "CrowdGame/TransparentOverlay"
 
     SubShader
     {
-        Tags { "RenderPipeline" = "UniversalPipeline" "RenderType" = "Transparent" "Queue" = "Overlay" }
+        Tags { "RenderType" = "Transparent" "Queue" = "Overlay" }
 
         // Composites a transparent overlay onto the screen.
         // Used for display clients showing game content over video feeds,
@@ -21,43 +21,42 @@ Shader "CrowdGame/TransparentOverlay"
             ZWrite Off
             Cull Off
 
-            HLSLPROGRAM
+            CGPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "UnityCG.cginc"
 
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
+            sampler2D _MainTex;
             half _Opacity;
 
             struct Attributes
             {
-                float4 positionOS : POSITION;
+                float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             struct Varyings
             {
-                float4 positionCS : SV_POSITION;
+                float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.pos = UnityObjectToClipPos(input.vertex);
                 output.uv = input.uv;
                 return output;
             }
 
             half4 Frag(Varyings input) : SV_Target
             {
-                half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+                half4 col = tex2D(_MainTex, input.uv);
                 col.a *= _Opacity;
                 return col;
             }
-            ENDHLSL
+            ENDCG
         }
     }
 

@@ -9,12 +9,6 @@ namespace Nonatomic.CrowdGame.Editor
 	/// </summary>
 	public static class CrowdGameMenuItems
 	{
-		[MenuItem("CrowdGame/Dashboard", priority = 0)]
-		private static void OpenDashboard()
-		{
-			CrowdGameDashboard.ShowWindow();
-		}
-
 		[MenuItem("CrowdGame/Validate Project", priority = 20)]
 		private static void ValidateProject()
 		{

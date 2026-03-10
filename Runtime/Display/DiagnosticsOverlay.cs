@@ -55,13 +55,15 @@ namespace Nonatomic.CrowdGame
 				_style.normal.background = _backgroundTexture;
 			}
 
-			var lines = $"FPS: {_fps:F0}";
-			lines += $"\nPlayers: {(Platform.IsInitialised ? Platform.PlayerCount : 0)}";
-			lines += $"\nState: {(Platform.IsInitialised ? Platform.CurrentState.ToString() : "N/A")}";
+			ServiceLocator.TryGet<IPlatform>(out var platform);
 
-			if (_showStreamingStats && Platform.IsInitialised)
+			var lines = $"FPS: {_fps:F0}";
+			lines += $"\nPlayers: {(platform != null ? platform.PlayerCount : 0)}";
+			lines += $"\nState: {(platform != null ? platform.CurrentState.ToString() : "N/A")}";
+
+			if (_showStreamingStats && platform != null)
 			{
-				var streaming = Platform.StreamingService;
+				var streaming = platform.StreamingService;
 				if (streaming != null)
 				{
 					lines += $"\nStream: {streaming.State}";

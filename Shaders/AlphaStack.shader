@@ -7,7 +7,7 @@ Shader "CrowdGame/AlphaStack"
 
     SubShader
     {
-        Tags { "RenderPipeline" = "UniversalPipeline" "RenderType" = "Opaque" }
+        Tags { "RenderType" = "Opaque" }
 
         // Single pass: pack RGB in top half, alpha as grayscale in bottom half.
         // Input: ARGB source texture at base resolution.
@@ -19,31 +19,30 @@ Shader "CrowdGame/AlphaStack"
             ZWrite Off
             Cull Off
 
-            HLSLPROGRAM
+            CGPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "UnityCG.cginc"
 
-            TEXTURE2D(_SrcTex);
-            SAMPLER(sampler_SrcTex);
+            sampler2D _SrcTex;
 
             struct Attributes
             {
-                float4 positionOS : POSITION;
+                float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             struct Varyings
             {
-                float4 positionCS : SV_POSITION;
+                float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.pos = UnityObjectToClipPos(input.vertex);
                 output.uv = input.uv;
                 return output;
             }
@@ -59,7 +58,7 @@ Shader "CrowdGame/AlphaStack"
                 {
                     // Top half: sample RGB from source, remap y from [0, 0.5] to [0, 1]
                     srcUV = float2(input.uv.x, input.uv.y * 2.0);
-                    half4 src = SAMPLE_TEXTURE2D(_SrcTex, sampler_SrcTex, srcUV);
+                    half4 src = tex2D(_SrcTex, srcUV);
                     result = half4(src.rgb, 1.0);
                 }
                 else
@@ -67,13 +66,13 @@ Shader "CrowdGame/AlphaStack"
                     // Bottom half: sample alpha from source, output as grayscale
                     // Remap y from [0.5, 1.0] to [0, 1]
                     srcUV = float2(input.uv.x, (input.uv.y - 0.5) * 2.0);
-                    half4 src = SAMPLE_TEXTURE2D(_SrcTex, sampler_SrcTex, srcUV);
+                    half4 src = tex2D(_SrcTex, srcUV);
                     result = half4(src.aaa, 1.0);
                 }
 
                 return result;
             }
-            ENDHLSL
+            ENDCG
         }
     }
 

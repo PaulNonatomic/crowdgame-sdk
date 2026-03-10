@@ -36,8 +36,7 @@ namespace Nonatomic.CrowdGame
 
 					CrowdGameLogger.Info(CrowdGameLogger.Category.Players, $"Player reconnected: {playerId}");
 					OnPlayerReconnected?.Invoke(existing);
-					PlatformEvents.RaisePlayerJoined(existing);
-					return existing;
+						return existing;
 				}
 
 				if (_registry.Count >= MaxPlayers)
@@ -50,8 +49,7 @@ namespace Nonatomic.CrowdGame
 				if (session != null)
 				{
 					OnPlayerJoined?.Invoke(session);
-					PlatformEvents.RaisePlayerJoined(session);
-				}
+					}
 
 				return session;
 			}
@@ -65,8 +63,7 @@ namespace Nonatomic.CrowdGame
 				if (session != null)
 				{
 					OnPlayerLeft?.Invoke(session);
-					PlatformEvents.RaisePlayerLeft(session);
-				}
+					}
 
 				return session;
 			}

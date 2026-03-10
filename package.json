@@ -9,8 +9,7 @@
 	"changelogUrl": "https://github.com/PaulNonatomic/crowdgame-sdk/blob/main/CHANGELOG.md",
 	"licensesUrl": "https://github.com/PaulNonatomic/crowdgame-sdk/blob/main/LICENSE.md",
 	"dependencies": {
-		"com.unity.inputsystem": "1.18.0",
-		"com.unity.render-pipelines.universal": "17.0.0"
+		"com.unity.inputsystem": "1.18.0"
 	},
 	"keywords": [
 		"crowdgame",

@@ -93,27 +93,28 @@ namespace Nonatomic.CrowdGame.Editor
 		{
 			if (!Application.isPlaying) return;
 
-			_statusLabel.text = Platform.IsInitialised
-				? "Status: Initialised"
-				: "Status: Not Initialised";
-
-			_gameStateLabel.text = $"Game State: {Platform.CurrentState}";
-			_playerCountLabel.text = $"Players: {Platform.PlayerCount}";
-
-			RefreshPlayerList();
-			RefreshStreamingInfo();
-		}
-
-		private void RefreshStreamingInfo()
-		{
-			if (!Platform.IsInitialised)
+			if (!ServiceLocator.TryGet<IPlatform>(out var platform))
 			{
+				_statusLabel.text = "Status: Not Initialised";
+				_gameStateLabel.text = "Game State: None";
+				_playerCountLabel.text = "Players: 0";
+				_playerList.Clear();
 				_streamStateLabel.text = "Stream: N/A";
 				_diagnosticsLabel.text = "Diagnostics: N/A";
 				return;
 			}
 
-			var streaming = Platform.StreamingService;
+			_statusLabel.text = "Status: Initialised";
+			_gameStateLabel.text = $"Game State: {platform.CurrentState}";
+			_playerCountLabel.text = $"Players: {platform.PlayerCount}";
+
+			RefreshPlayerList(platform);
+			RefreshStreamingInfo(platform);
+		}
+
+		private void RefreshStreamingInfo(IPlatform platform)
+		{
+			var streaming = platform.StreamingService;
 			if (streaming == null)
 			{
 				_streamStateLabel.text = "Stream: No service";
@@ -136,13 +137,11 @@ namespace Nonatomic.CrowdGame.Editor
 			}
 		}
 
-		private void RefreshPlayerList()
+		private void RefreshPlayerList(IPlatform platform)
 		{
 			_playerList.Clear();
 
-			if (!Platform.IsInitialised) return;
-
-			foreach (var player in Platform.Players)
+			foreach (var player in platform.Players)
 			{
 				var label = new Label($"  {player.Metadata.DisplayName} ({player.PlayerId})");
 				label.style.fontSize = 11;

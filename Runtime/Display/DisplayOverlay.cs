@@ -9,6 +9,7 @@ namespace Nonatomic.CrowdGame
 	/// </summary>
 	public class DisplayOverlay : MonoBehaviour
 	{
+		private IPlatform _platform;
 		[Header("Display")]
 		[SerializeField] private bool _showInBuild = true;
 		[SerializeField] private bool _showGameCode = true;
@@ -47,26 +48,32 @@ namespace Nonatomic.CrowdGame
 
 		private void OnEnable()
 		{
-			if (Platform.IsInitialised)
+			if (ServiceLocator.TryGet<IPlatform>(out _platform))
 			{
 				UpdateInfo();
+				_platform.OnPlayerJoined += OnPlayerChanged;
+				_platform.OnPlayerLeft += OnPlayerChanged;
+				_platform.OnGameStateChanged += OnGameStateChanged;
 			}
-
-			Platform.OnPlayerJoined += OnPlayerChanged;
-			Platform.OnPlayerLeft += OnPlayerChanged;
-			Platform.OnGameStateChanged += OnGameStateChanged;
 		}
 
 		private void OnDisable()
 		{
-			Platform.OnPlayerJoined -= OnPlayerChanged;
-			Platform.OnPlayerLeft -= OnPlayerChanged;
-			Platform.OnGameStateChanged -= OnGameStateChanged;
+			if (_platform == null) return;
+
+			_platform.OnPlayerJoined -= OnPlayerChanged;
+			_platform.OnPlayerLeft -= OnPlayerChanged;
+			_platform.OnGameStateChanged -= OnGameStateChanged;
+			_platform = null;
 		}
 
 		private void Update()
 		{
-			if (!Platform.IsInitialised) return;
+			if (_platform == null)
+			{
+				ServiceLocator.TryGet<IPlatform>(out _platform);
+			}
+			if (_platform == null) return;
 			UpdateInfo();
 		}
 
@@ -125,8 +132,8 @@ namespace Nonatomic.CrowdGame
 				_lastInfo = new DisplayInfo();
 			}
 
-			_lastInfo.PlayerCount = Platform.PlayerCount;
-			_lastInfo.GameState = Platform.CurrentState;
+			_lastInfo.PlayerCount = _platform.PlayerCount;
+			_lastInfo.GameState = _platform.CurrentState;
 		}
 
 		private void OnPlayerChanged(IPlayerSession _)

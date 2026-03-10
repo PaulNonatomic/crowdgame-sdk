@@ -9,102 +9,108 @@ namespace Nonatomic.CrowdGame.Tests.EditMode
 		[TearDown]
 		public void TearDown()
 		{
-			Platform.Shutdown();
+			if (ServiceLocator.TryGet<IPlatform>(out var platform))
+			{
+				platform.Dispose();
+			}
+			ServiceLocator.Clear();
 		}
 
 		[Test]
-		public void IsInitialised_BeforeInit_ReturnsFalse()
+		public void IsRegistered_BeforeInit_ReturnsFalse()
 		{
-			Assert.IsFalse(Platform.IsInitialised);
+			Assert.IsFalse(ServiceLocator.IsRegistered<IPlatform>());
 		}
 
 		[Test]
-		public void Initialise_SetsIsInitialised()
+		public void Initialise_SetsIsRegistered()
 		{
-			Platform.Initialise();
-			Assert.IsTrue(Platform.IsInitialised);
+			var service = new PlatformService();
+			service.Initialise();
+			ServiceLocator.Register<IPlatform>(service);
+
+			Assert.IsTrue(ServiceLocator.IsRegistered<IPlatform>());
 		}
 
 		[Test]
 		public void Initialise_SetsInstance()
 		{
-			Platform.Initialise();
-			Assert.IsNotNull(Platform.Instance);
+			var service = new PlatformService();
+			service.Initialise();
+			ServiceLocator.Register<IPlatform>(service);
+
+			Assert.IsNotNull(ServiceLocator.Get<IPlatform>());
 		}
 
 		[Test]
 		public void Shutdown_ClearsInstance()
 		{
-			Platform.Initialise();
-			Platform.Shutdown();
+			var service = new PlatformService();
+			service.Initialise();
+			ServiceLocator.Register<IPlatform>(service);
 
-			Assert.IsFalse(Platform.IsInitialised);
-			Assert.IsNull(Platform.Instance);
+			service.Dispose();
+			ServiceLocator.Unregister<IPlatform>();
+
+			Assert.IsFalse(ServiceLocator.IsRegistered<IPlatform>());
 		}
 
 		[Test]
 		public void Initialise_CalledTwice_DoesNotThrow()
 		{
-			Platform.Initialise();
-			Assert.DoesNotThrow(() => Platform.Initialise());
+			var service = new PlatformService();
+			service.Initialise();
+			Assert.DoesNotThrow(() => service.Initialise());
 		}
 
 		[Test]
 		public void CurrentState_BeforeInit_ReturnsNone()
 		{
-			Assert.AreEqual(GameState.None, Platform.CurrentState);
+			var service = new PlatformService();
+			Assert.AreEqual(GameState.None, service.CurrentState);
 		}
 
 		[Test]
 		public void PlayerCount_BeforeInit_ReturnsZero()
 		{
-			Assert.AreEqual(0, Platform.PlayerCount);
+			var service = new PlatformService();
+			Assert.AreEqual(0, service.PlayerCount);
 		}
 
 		[Test]
-		public void Players_BeforeInit_ReturnsEmpty()
+		public void Players_AfterInit_ReturnsEmpty()
 		{
-			Assert.IsNotNull(Platform.Players);
-			Assert.AreEqual(0, Platform.Players.Count);
+			var service = new PlatformService();
+			service.Initialise();
+			Assert.IsNotNull(service.Players);
+			Assert.AreEqual(0, service.Players.Count);
 		}
 
 		[Test]
-		public void Register_CustomPlatform_SetsInstance()
+		public void Register_SetsGetResult()
 		{
-			var custom = new PlatformService();
-			Platform.Register(custom);
+			var service = new PlatformService();
+			service.Initialise();
+			ServiceLocator.Register<IPlatform>(service);
 
-			Assert.AreSame(custom, Platform.Instance);
-		}
-
-		[Test]
-		public void Initialise_AutoWiresLifecycle()
-		{
-			Platform.Initialise();
-			Assert.IsNotNull(Platform.Instance.Lifecycle);
-			Assert.IsInstanceOf<GameLifecycleManager>(Platform.Instance.Lifecycle);
-		}
-
-		[Test]
-		public void Initialise_AutoWiresMessageTransport()
-		{
-			Platform.Initialise();
-			Assert.IsNotNull(Platform.Instance.MessageTransport);
-			Assert.IsInstanceOf<WebSocketMessageTransport>(Platform.Instance.MessageTransport);
+			Assert.AreSame(service, ServiceLocator.Get<IPlatform>());
 		}
 
 		[Test]
 		public void Initialise_LifecycleStartsAtNone()
 		{
-			Platform.Initialise();
-			Assert.AreEqual(GameState.None, Platform.Instance.Lifecycle.CurrentState);
+			var service = new PlatformService();
+			service.RegisterLifecycle(new GameLifecycleManager());
+			service.Initialise();
+
+			Assert.AreEqual(GameState.None, service.Lifecycle.CurrentState);
 		}
 
 		[Test]
 		public void RegisterOverride_InputProvider_ReplacesDefault()
 		{
 			var service = new PlatformService();
-			service.Initialise(null);
+			service.Initialise();
 
 			var custom = new MockInputProvider();
 			service.RegisterInputProvider(custom);
@@ -116,7 +122,7 @@ namespace Nonatomic.CrowdGame.Tests.EditMode
 		public void RegisterOverride_MessageTransport_ReplacesDefault()
 		{
 			var service = new PlatformService();
-			service.Initialise(null);
+			service.Initialise();
 
 			var custom = new MockMessageTransport();
 			service.RegisterMessageTransport(custom);
@@ -128,7 +134,7 @@ namespace Nonatomic.CrowdGame.Tests.EditMode
 		public void RegisterOverride_Lifecycle_ReplacesDefault()
 		{
 			var service = new PlatformService();
-			service.Initialise(null);
+			service.Initialise();
 
 			var custom = new GameLifecycleManager();
 			service.RegisterLifecycle(custom);
@@ -137,13 +143,12 @@ namespace Nonatomic.CrowdGame.Tests.EditMode
 		}
 
 		[Test]
-		public void Shutdown_DisposesSubsystems()
+		public void Dispose_DoesNotThrow()
 		{
-			Platform.Initialise();
-			var transport = Platform.Instance.MessageTransport;
+			var service = new PlatformService();
+			service.Initialise();
 
-			Assert.DoesNotThrow(() => Platform.Shutdown());
-			Assert.IsNull(Platform.Instance);
+			Assert.DoesNotThrow(() => service.Dispose());
 		}
 
 		/// <summary>

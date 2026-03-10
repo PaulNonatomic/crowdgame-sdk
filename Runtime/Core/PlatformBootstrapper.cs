@@ -1,3 +1,5 @@
+using Nonatomic.CrowdGame.Messaging;
+using Nonatomic.CrowdGame.Streaming;
 using UnityEngine;
 
 namespace Nonatomic.CrowdGame
@@ -19,7 +21,11 @@ namespace Nonatomic.CrowdGame
 		[field: SerializeField]
 		public bool PersistAcrossScenes { get; private set; } = true;
 
+		[field: SerializeField]
+		public LocalInputProvider LocalInputProvider { get; private set; }
+
 		private static PlatformBootstrapper _instance;
+		private IPlatform _platform;
 
 		private void Awake()
 		{
@@ -42,14 +48,54 @@ namespace Nonatomic.CrowdGame
 			}
 
 			if (!AutoInitialise) return;
-			Platform.Initialise(Config);
+
+			var service = new PlatformService();
+			var signalingUrl = Config?.SignalingUrl ?? "ws://localhost";
+
+			// Input provider — editor uses local keyboard, builds use WebSocket
+			if (LocalInputProvider != null)
+			{
+				service.RegisterInputProvider(LocalInputProvider);
+				LocalInputProvider.ConnectAsync().FireAndForget();
+			}
+#if !UNITY_EDITOR
+			else
+			{
+				var wsInput = new WebSocketInputProvider(signalingUrl);
+				service.RegisterInputProvider(wsInput);
+			}
+#endif
+
+			service.RegisterLifecycle(new GameLifecycleManager());
+			service.RegisterMessageTransport(new WebSocketMessageTransport(signalingUrl));
+
+#if !UNITY_EDITOR
+			service.RegisterStreamingService(new StreamingService());
+#endif
+
+			if (Config != null)
+			{
+				service.PlayerManager.MaxPlayers = Config.MaxPlayers;
+			}
+
+			service.Initialise();
+			ServiceLocator.Register<IPlatform>(service);
+			_platform = service;
 		}
 
 		private void OnDestroy()
 		{
 			if (_instance != this) return;
 			_instance = null;
-			Platform.Shutdown();
+
+			if (_platform != null)
+			{
+				_platform.Dispose();
+				_platform = null;
+				ServiceLocator.Unregister<IPlatform>();
+			}
+
+			CrowdGameLogger.Info(CrowdGameLogger.Category.Core, "Platform shut down.");
 		}
 
 		private static PlatformConfig FindConfig()
