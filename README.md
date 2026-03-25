@@ -18,6 +18,11 @@ Unity Package Manager (UPM) package that game developers integrate into their Un
 
 **Zero cloud dependencies for local testing.** The SDK's primary workflow uses Docker for local testing — no Supabase, no AWS, no tunnelling, no phone required (initially).
 
+## Support
+If you like my work then please consider showing your support by buying me a brew
+<br><br>
+<a href="https://www.buymeacoffee.com/nonatomic" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-green.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 ---
 
 ## Core API Surface
